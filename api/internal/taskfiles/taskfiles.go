@@ -63,6 +63,7 @@ type Config struct {
 	LabelGroups []LabelGroup
 	LabelColors map[string]string
 	People      []Person
+	CodeRepos   []string
 }
 
 type Problem struct {

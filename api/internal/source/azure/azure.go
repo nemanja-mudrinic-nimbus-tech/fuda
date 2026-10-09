@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,35 +26,39 @@ type Repo struct {
 	Name    string
 }
 
+const (
+	hostBase     = "https://dev.azure.com"
+	accountsBase = "https://app.vssps.visualstudio.com"
+	boardPrefix  = "fuda-"
+)
+
 func (r Repo) WebURL() string {
-	return "https://dev.azure.com/" + url.PathEscape(r.Org) + "/" + url.PathEscape(r.Project) + "/_git/" + url.PathEscape(r.Name)
+	return hostBase + "/" + url.PathEscape(r.Org) + "/" + url.PathEscape(r.Project) + "/_git/" + url.PathEscape(r.Name)
+}
+
+func (r Repo) apiBase(host string) string {
+	return host + "/" + url.PathEscape(r.Org) + "/" + url.PathEscape(r.Project) + "/_apis/git/repositories/" + url.PathEscape(r.Name)
 }
 
 type Source struct {
-	repo          Repo
-	authorization string
-	docsRoot      string
-	base          string
-	client        *http.Client
+	repo     Repo
+	docsRoot string
+	host     string
+	accounts string
+	client   *http.Client
 }
 
-func WithPAT(repo Repo, pat, docsRoot string) *Source {
-	return newSource(repo, "Basic "+base64.StdEncoding.EncodeToString([]byte(":"+pat)), docsRoot)
-}
-
-func WithBearer(repo Repo, token, docsRoot string) *Source {
-	return newSource(repo, "Bearer "+token, docsRoot)
-}
-
-func newSource(repo Repo, authorization, docsRoot string) *Source {
+func New(repo Repo, docsRoot string) *Source {
 	return &Source{
-		repo:          repo,
-		authorization: authorization,
-		docsRoot:      docsRoot,
-		base:          "https://dev.azure.com/" + url.PathEscape(repo.Org) + "/" + url.PathEscape(repo.Project) + "/_apis/git/repositories/" + url.PathEscape(repo.Name),
-		client:        &http.Client{Timeout: 60 * time.Second},
+		repo:     repo,
+		docsRoot: docsRoot,
+		host:     hostBase,
+		accounts: accountsBase,
+		client:   &http.Client{Timeout: 60 * time.Second},
 	}
 }
+
+func (s *Source) base() string { return s.repo.apiBase(s.host) }
 
 func (s *Source) CodeURL(branch string) func(string) string {
 	return func(repoPath string) string {
@@ -74,7 +77,7 @@ func (s *Source) Head(ctx context.Context, branch string) (string, error) {
 			ObjectID string `json:"objectId"`
 		} `json:"value"`
 	}
-	if err := s.getJSON(ctx, "/refs", url.Values{"filter": {"heads/" + branch}}, &out); err != nil {
+	if err := s.getJSON(ctx, s.base(), "/refs", url.Values{"filter": {"heads/" + branch}}, &out); err != nil {
 		return "", err
 	}
 	for _, ref := range out.Value {
@@ -86,19 +89,23 @@ func (s *Source) Head(ctx context.Context, branch string) (string, error) {
 }
 
 func (s *Source) Files(ctx context.Context, branch string) (map[string][]byte, error) {
-	body, err := s.get(ctx, "/items", url.Values{
+	res, err := s.send(ctx, http.MethodGet, s.base()+"/items", url.Values{
 		"path":                          {"/" + s.docsRoot},
 		"$format":                       {"zip"},
 		"download":                      {"true"},
 		"versionDescriptor.version":     {branch},
 		"versionDescriptor.versionType": {"branch"},
-	})
-	if errors.Is(err, errNotFound) {
-		return map[string][]byte{}, nil
-	}
+	}, nil)
 	if err != nil {
 		return nil, err
 	}
+	if res.status == http.StatusNotFound {
+		return map[string][]byte{}, nil
+	}
+	if res.status >= 300 {
+		return nil, res.failure()
+	}
+	body := res.body
 	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	if err != nil {
 		return nil, fmt.Errorf("items zip: %w", err)
@@ -127,120 +134,98 @@ func readZipFile(f *zip.File) ([]byte, error) {
 	return io.ReadAll(r)
 }
 
-func (s *Source) OpenPRs(ctx context.Context, base string) ([]board.PullRequest, error) {
+func (s *Source) OpenPRs(ctx context.Context, repo string) ([]board.PullRequest, error) {
+	parts := strings.Split(repo, "/")
+	if len(parts) != 3 {
+		return nil, board.ErrNotFound
+	}
+	code := Repo{Org: parts[0], Project: parts[1], Name: parts[2]}
 	var pulls struct {
 		Value []struct {
-			ID                    int `json:"pullRequestId"`
-			LastMergeSourceCommit struct {
-				CommitID string `json:"commitId"`
-			} `json:"lastMergeSourceCommit"`
+			ID            int    `json:"pullRequestId"`
+			Title         string `json:"title"`
+			SourceRefName string `json:"sourceRefName"`
 		} `json:"value"`
 	}
-	if err := s.getJSON(ctx, "/pullrequests", url.Values{
-		"searchCriteria.status":        {"active"},
-		"searchCriteria.targetRefName": {"refs/heads/" + base},
-		"$top":                         {"100"},
-	}, &pulls); err != nil {
+	err := s.getJSON(ctx, code.apiBase(s.host), "/pullrequests", url.Values{
+		"searchCriteria.status": {"active"},
+		"$top":                  {"100"},
+	}, &pulls)
+	if errors.Is(err, errNotFound) {
+		return nil, board.ErrNotFound
+	}
+	if err != nil {
 		return nil, err
 	}
-	out := make([]board.PullRequest, 0, len(pulls.Value))
-	for _, p := range pulls.Value {
-		paths, err := s.changedPaths(ctx, p.ID)
-		if err != nil {
-			return nil, err
+	out := make([]board.PullRequest, len(pulls.Value))
+	for i, p := range pulls.Value {
+		out[i] = board.PullRequest{
+			Number: p.ID,
+			URL:    fmt.Sprintf("%s/pullrequest/%d", code.WebURL(), p.ID),
+			Title:  p.Title,
+			Branch: strings.TrimPrefix(p.SourceRefName, "refs/heads/"),
 		}
-		out = append(out, board.PullRequest{
-			Number:       p.ID,
-			URL:          strings.ReplaceAll(s.PRLink(), "{n}", fmt.Sprint(p.ID)),
-			HeadSHA:      p.LastMergeSourceCommit.CommitID,
-			ChangedPaths: paths,
-		})
 	}
 	return out, nil
 }
 
-func (s *Source) changedPaths(ctx context.Context, pr int) ([]string, error) {
-	var iterations struct {
-		Value []struct {
-			ID int `json:"id"`
-		} `json:"value"`
-	}
-	if err := s.getJSON(ctx, fmt.Sprintf("/pullrequests/%d/iterations", pr), nil, &iterations); err != nil {
-		return nil, err
-	}
-	if len(iterations.Value) == 0 {
-		return nil, nil
-	}
-	latest := iterations.Value[len(iterations.Value)-1].ID
-	var changes struct {
-		ChangeEntries []struct {
-			ChangeType string `json:"changeType"`
-			Item       struct {
-				Path string `json:"path"`
-			} `json:"item"`
-		} `json:"changeEntries"`
-	}
-	if err := s.getJSON(ctx, fmt.Sprintf("/pullrequests/%d/iterations/%d/changes", pr, latest), url.Values{"$compareTo": {"0"}, "$top": {"2000"}}, &changes); err != nil {
-		return nil, err
-	}
-	var paths []string
-	for _, c := range changes.ChangeEntries {
-		if !strings.Contains(c.ChangeType, "delete") && c.Item.Path != "" {
-			paths = append(paths, strings.TrimPrefix(c.Item.Path, "/"))
-		}
-	}
-	return paths, nil
+type response struct {
+	url    string
+	status int
+	body   []byte
 }
 
-func (s *Source) FileAt(ctx context.Context, repoPath, ref string) ([]byte, error) {
-	content, err := s.get(ctx, "/items", url.Values{
-		"path":                          {"/" + repoPath},
-		"versionDescriptor.version":     {ref},
-		"versionDescriptor.versionType": {"commit"},
-		"$format":                       {"octetStream"},
-	})
-	if errors.Is(err, errNotFound) {
-		return nil, board.ErrNotFound
-	}
-	return content, err
+func (r response) failure() error {
+	return fmt.Errorf("azure %s: status %d: %s", r.url, r.status, truncate(r.body))
 }
 
-func (s *Source) getJSON(ctx context.Context, path string, query url.Values, v any) error {
-	body, err := s.get(ctx, path, query)
+func (s *Source) getJSON(ctx context.Context, base, path string, query url.Values, v any) error {
+	res, err := s.send(ctx, http.MethodGet, base+path, query, nil)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(body, v)
+	switch {
+	case res.status == http.StatusNotFound:
+		return errNotFound
+	case res.status >= 300:
+		return res.failure()
+	}
+	return json.Unmarshal(res.body, v)
 }
 
-func (s *Source) get(ctx context.Context, path string, query url.Values) ([]byte, error) {
+func (s *Source) send(ctx context.Context, method, target string, query url.Values, payload []byte) (response, error) {
+	token := board.TokenFrom(ctx)
+	if token == "" {
+		return response{}, board.ErrUnauthorized
+	}
 	if query == nil {
 		query = url.Values{}
 	}
 	query.Set("api-version", apiVersion)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.base+path+"?"+query.Encode(), nil)
+	req, err := http.NewRequestWithContext(ctx, method, target+"?"+query.Encode(), bytes.NewReader(payload))
 	if err != nil {
-		return nil, err
+		return response{}, err
 	}
-	req.Header.Set("Authorization", s.authorization)
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 	res, err := s.client.Do(req)
 	if err != nil {
-		return nil, err
+		return response{}, err
 	}
 	defer func() { _ = res.Body.Close() }()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return response{}, err
 	}
-	switch {
-	case res.StatusCode == http.StatusNotFound:
-		return nil, errNotFound
-	case res.StatusCode == http.StatusNonAuthoritativeInfo, res.StatusCode == http.StatusUnauthorized:
-		return nil, fmt.Errorf("azure %s: authentication failed (%s); check FUDA_AZURE_PAT", path, res.Status)
-	case res.StatusCode >= 300:
-		return nil, fmt.Errorf("azure %s: %s: %s", path, res.Status, truncate(body))
+	switch res.StatusCode {
+	case http.StatusNonAuthoritativeInfo, http.StatusUnauthorized:
+		return response{}, board.ErrUnauthorized
+	case http.StatusForbidden:
+		return response{}, board.ErrForbidden
 	}
-	return body, nil
+	return response{url: target, status: res.StatusCode, body: body}, nil
 }
 
 func truncate(b []byte) string {

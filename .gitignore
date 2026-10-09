@@ -6,3 +6,4 @@ node_modules/
 .env
 personal-agent.md
 .DS_Store
+.claude/worktrees/

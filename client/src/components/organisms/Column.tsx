@@ -5,6 +5,7 @@ import { StatusIcon } from '@/components/atoms/StatusIcon'
 import { TaskCard } from '@/components/molecules/TaskCard'
 import { Button } from '@/components/ui/button'
 import type { Card, Column as ColumnData } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 const pageSize = 25
 
@@ -15,17 +16,28 @@ function columnStatus(column: ColumnData): string {
 export function Column({
   column,
   cards,
-  prLink,
+  saving,
+  dropAllowed,
+  isDraggable,
+  onDragStart,
+  onDragEnd,
+  onDrop,
   collapsed,
   onToggleCollapse,
 }: {
   column: ColumnData
   cards: Card[]
-  prLink?: string
+  saving: Set<string>
+  dropAllowed: boolean
+  isDraggable: (card: Card) => boolean
+  onDragStart: (card: Card) => void
+  onDragEnd: () => void
+  onDrop: () => void
   collapsed: boolean
   onToggleCollapse: () => void
 }) {
   const [limit, setLimit] = useState(pageSize)
+  const [over, setOver] = useState(false)
   const status = columnStatus(column)
 
   if (collapsed) {
@@ -48,7 +60,26 @@ export function Column({
   const hidden = cards.length - visible.length
 
   return (
-    <section className="group/column flex w-[85vw] shrink-0 snap-start flex-col rounded-xl bg-muted/50 sm:w-76 dark:bg-muted/30">
+    <section
+      onDragOver={(e) => {
+        if (!dropAllowed) return
+        e.preventDefault()
+        setOver(true)
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false)
+      }}
+      onDrop={(e) => {
+        if (!dropAllowed) return
+        e.preventDefault()
+        setOver(false)
+        onDrop()
+      }}
+      className={cn(
+        'group/column flex w-[85vw] shrink-0 snap-start flex-col rounded-xl bg-muted/50 sm:w-76 dark:bg-muted/30',
+        over && 'ring-2 ring-primary/40',
+      )}
+    >
       <header className="flex h-10 items-center gap-2 px-3 text-[13px] font-medium">
         <StatusIcon status={status} />
         <span>{column.name}</span>
@@ -74,7 +105,17 @@ export function Column({
         {cards.length === 0 ? (
           <p className="px-3 py-8 text-center text-xs text-muted-foreground/80">No tasks</p>
         ) : (
-          visible.map((c) => <TaskCard key={c.id} card={c} column={column} prLink={prLink} />)
+          visible.map((c) => (
+            <TaskCard
+              key={c.id}
+              card={c}
+              column={column}
+              saving={saving.has(c.id)}
+              draggable={isDraggable(c)}
+              onDragStart={() => onDragStart(c)}
+              onDragEnd={onDragEnd}
+            />
+          ))
         )}
         {hidden > 0 && (
           <Button

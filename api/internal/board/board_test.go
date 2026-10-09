@@ -98,13 +98,13 @@ func TestConfiguredStagesWithSeveralStatuses(t *testing.T) {
 
 func TestOpenPRMovesToReviewOnlyWhenAStageAllowsIt(t *testing.T) {
 	tasks := []taskfiles.Task{task("A1", "in progress")}
-	prs := map[string][]int{"A1": {42}}
+	prs := map[string][]OpenPR{"A1": {{Number: 42}}}
 
 	withReview := Build(Inputs{Develop: taskfiles.Result{Tasks: tasks}, OpenPRs: prs})
 	if columnOf(withReview, "A1") != "in-review" {
 		t.Error("default stages include In review")
 	}
-	if got := card(withReview, "A1").OpenPRs; !reflect.DeepEqual(got, []int{42}) {
+	if got := card(withReview, "A1").OpenPRs; !reflect.DeepEqual(got, []OpenPR{{Number: 42}}) {
 		t.Errorf("open PRs %v", got)
 	}
 
@@ -113,27 +113,6 @@ func TestOpenPRMovesToReviewOnlyWhenAStageAllowsIt(t *testing.T) {
 	}}}, OpenPRs: prs})
 	if columnOf(without, "A1") != "doing" {
 		t.Error("without a pr-open stage the status decides")
-	}
-}
-
-func TestTaskAddedInAPRShowsInReview(t *testing.T) {
-	added := task("SS-111", "merged", func(t *taskfiles.Task) { t.PRs = []int{134} })
-	b := Build(Inputs{
-		Develop:    taskfiles.Result{Tasks: []taskfiles.Task{task("SS-1", "backlog")}},
-		OpenPRs:    map[string][]int{"SS-111": {134}},
-		AddedInPRs: []taskfiles.Task{added},
-	})
-	c := card(b, "SS-111")
-	if c.Column != "in-review" || !c.NewInPR || len(c.OpenPRs) != 1 {
-		t.Fatalf("card: %+v", c)
-	}
-
-	noReview := Build(Inputs{
-		Develop:    taskfiles.Result{Config: taskfiles.Config{Stages: []taskfiles.Stage{{Name: "Todo", Statuses: []string{"backlog"}}}}},
-		AddedInPRs: []taskfiles.Task{added},
-	})
-	if len(noReview.Cards) != 0 {
-		t.Error("without an In review stage a PR-only task has nowhere to go")
 	}
 }
 
@@ -231,28 +210,6 @@ func TestPrefixes(t *testing.T) {
 		if got := idPrefix(id); got != want {
 			t.Errorf("idPrefix(%q) = %q, want %q", id, got, want)
 		}
-	}
-}
-
-func TestDelivers(t *testing.T) {
-	before := task("A1", "in progress")
-	cases := []struct {
-		name  string
-		after taskfiles.Task
-		want  bool
-	}{
-		{"sets merged", task("A1", "merged"), true},
-		{"adds its number", task("A1", "in progress", func(t *taskfiles.Task) { t.PRs = []int{7} }), true},
-		{"only evidence", task("A1", "in progress", body("evidence")), false},
-		{"another PR's number", task("A1", "in progress", func(t *taskfiles.Task) { t.PRs = []int{8} }), false},
-	}
-	for _, c := range cases {
-		if got := Delivers(7, &before, c.after); got != c.want {
-			t.Errorf("%s: got %v", c.name, got)
-		}
-	}
-	if !Delivers(7, nil, task("A1", "merged")) {
-		t.Error("a new task file that says merged is delivered")
 	}
 }
 

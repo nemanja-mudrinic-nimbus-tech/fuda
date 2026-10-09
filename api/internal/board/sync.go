@@ -24,6 +24,34 @@ func (s *Service) Sync(ctx context.Context) error {
 	return err
 }
 
+func (s *Service) Poll(ctx context.Context) error {
+	head, err := s.source.Head(ctx, s.opts.WorkBranch)
+	if errors.Is(err, ErrBranchMissing) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	snap := s.snapshot.Load()
+	if snap == nil || snap.heads[s.opts.WorkBranch] != head {
+		err := s.Sync(ctx)
+		if errors.Is(err, ErrBranchMissing) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if s.refreshDue() {
+		go func() { _ = s.Sync(context.WithoutCancel(ctx)) }()
+	}
+	return nil
+}
+
+func (s *Service) refreshDue() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.now().Sub(s.status.LastAttempt) >= s.opts.Cooldown
+}
+
 func (s *Service) RequestSync(ctx context.Context) bool {
 	s.mu.Lock()
 	now := s.now()
@@ -38,35 +66,14 @@ func (s *Service) RequestSync(ctx context.Context) bool {
 	return true
 }
 
-func (s *Service) NotifyChange(ctx context.Context) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.pending {
-		return
-	}
-	background := context.WithoutCancel(ctx)
-	now := s.now()
-	wait := s.opts.Cooldown - now.Sub(s.lastRequest)
-	if s.lastRequest.IsZero() || wait <= 0 {
-		s.lastRequest = now
-		go func() { _ = s.Sync(background) }()
-		return
-	}
-	s.pending = true
-	time.AfterFunc(wait, func() {
-		s.mu.Lock()
-		s.pending = false
-		s.lastRequest = s.now()
-		s.mu.Unlock()
-		_ = s.Sync(background)
-	})
-}
-
 func (s *Service) sync(ctx context.Context) error {
 	err := s.load(ctx)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.status.LastAttempt = s.now()
+	if errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrForbidden) {
+		return err
+	}
 	if err != nil {
 		s.status.LastError = err.Error()
 		return err
@@ -176,18 +183,12 @@ func (s *Service) build(develop taskfiles.Result, main *taskfiles.Result, files 
 		byID[t.ID] = t
 		taskPaths[t.Path] = t.ID
 	}
-	for id, t := range found.added {
-		if _, exists := byID[id]; !exists {
-			byID[id] = t
-		}
-	}
 
 	return &snapshot{
 		board: Build(Inputs{
-			Develop:    develop,
-			Main:       main,
-			OpenPRs:    found.open,
-			AddedInPRs: slices.Collect(maps.Values(found.added)),
+			Develop: develop,
+			Main:    main,
+			OpenPRs: found,
 		}),
 		develop: develop,
 		main:    main,
@@ -198,6 +199,7 @@ func (s *Service) build(develop taskfiles.Result, main *taskfiles.Result, files 
 		byID:    byID,
 		heads:   heads,
 		links: markdown.Links{
+			Prefix:    s.opts.Origin.Path,
 			DocsRoot:  s.opts.DocsRoot,
 			Docs:      docSet,
 			Assets:    assetSet,
@@ -220,22 +222,4 @@ func (s *Service) markSyncedAt(heads map[string]string, snap *snapshot, now time
 		return
 	}
 	s.status.Main = &BranchStatus{Branch: s.opts.ProdBranch, SHA: heads[s.opts.ProdBranch], SyncedAt: now, NotYet: snap.main == nil}
-}
-
-func (s *Service) Run(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			s.mu.Lock()
-			recent := !s.lastRequest.IsZero() && s.now().Sub(s.lastRequest) < interval
-			s.mu.Unlock()
-			if !recent {
-				_ = s.Sync(ctx)
-			}
-		}
-	}
 }

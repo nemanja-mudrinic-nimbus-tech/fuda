@@ -26,6 +26,10 @@ var ErrBranchMissing = errors.New("branch not found")
 
 var ErrNotFound = errors.New("not found")
 
+var ErrUnauthorized = errors.New("login required")
+
+var ErrForbidden = errors.New("no access")
+
 type Options struct {
 	Title      string
 	DocsRoot   string
@@ -45,6 +49,7 @@ type Origin struct {
 	Host string `json:"host"`
 	Repo string `json:"repo"`
 	URL  string `json:"url,omitempty"`
+	Path string `json:"path"`
 }
 
 type Service struct {
@@ -57,7 +62,7 @@ type Service struct {
 
 	mu          sync.Mutex
 	lastRequest time.Time
-	pending     bool
+	access      map[string]knownAccess
 	status      SyncStatus
 }
 
@@ -92,7 +97,7 @@ func NewService(source Source, opts Options) *Service {
 	if opts.Logger == nil {
 		opts.Logger = slog.New(slog.DiscardHandler)
 	}
-	return &Service{source: source, opts: opts, now: time.Now}
+	return &Service{source: source, opts: opts, now: time.Now, access: map[string]knownAccess{}}
 }
 
 type BoardView struct {
@@ -101,6 +106,8 @@ type BoardView struct {
 	PRLink string     `json:"prLink,omitempty"`
 	Origin Origin     `json:"origin"`
 	Sync   SyncStatus `json:"sync"`
+
+	ReadOnly bool `json:"readOnly"`
 }
 
 func (s *Service) Board() (BoardView, bool) {
@@ -193,7 +200,7 @@ func archivedCard(t taskfiles.Task) Card {
 		Done:         t.Done,
 		PRs:          orEmpty(t.PRs),
 		PRRef:        t.PRRef,
-		OpenPRs:      []int{},
+		OpenPRs:      []OpenPR{},
 		BlockedBy:    t.BlockedBy,
 		BlockedByIDs: []string{},
 		Blocks:       []string{},

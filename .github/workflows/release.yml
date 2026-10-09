@@ -1,0 +1,58 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes
+
+  desktop:
+    needs: release
+    strategy:
+      matrix:
+        include:
+          - { runner: macos-latest, target: desktop-macos, os: darwin, arch: arm64 }
+          - { runner: macos-latest, target: desktop-macos, os: darwin, arch: amd64 }
+          - { runner: windows-latest, target: desktop-windows, os: windows, arch: amd64 }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: client/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build
+        shell: bash
+        run: |
+          test -n "${{ vars.FUDA_GITHUB_CLIENT_ID }}" || { echo "Set the FUDA_GITHUB_CLIENT_ID repository variable"; exit 1; }
+          make ${{ matrix.target }} ARCH=${{ matrix.arch }} VERSION=${GITHUB_REF_NAME#v} GITHUB_CLIENT_ID=${{ vars.FUDA_GITHUB_CLIENT_ID }}
+      - name: Pack and upload
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name=fuda-desktop_${{ matrix.os }}_${{ matrix.arch }}
+          cd bin
+          if [ "${{ matrix.os }}" = windows ]; then
+            7z a "$name.zip" fuda-desktop.exe
+            asset="$name.zip"
+          else
+            tar -czf "$name.tar.gz" fuda.app
+            asset="$name.tar.gz"
+          fi
+          gh release upload "$GITHUB_REF_NAME" "$asset" --clobber

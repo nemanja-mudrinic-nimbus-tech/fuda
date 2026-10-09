@@ -14,6 +14,7 @@ import (
 )
 
 type Links struct {
+	Prefix    string
 	DocsRoot  string
 	Docs      map[string]bool
 	Assets    map[string]bool
@@ -87,16 +88,16 @@ func (l Links) resolve(dest, dir string) (string, bool) {
 	}
 
 	if id, ok := l.TaskPaths[repoPath]; ok {
-		return "/?task=" + url.QueryEscape(id), true
+		return l.Prefix + "/?task=" + url.QueryEscape(id), true
 	}
 	if l.Assets[repoPath] {
-		return assetURL(repoPath), true
+		return l.assetURL(repoPath), true
 	}
 	if strings.HasSuffix(repoPath, ".md") {
 		if !l.Docs[repoPath] {
 			return "", false
 		}
-		href := "/docs/" + strings.TrimPrefix(repoPath, l.DocsRoot+"/")
+		href := l.Prefix + "/docs/" + strings.TrimPrefix(repoPath, l.DocsRoot+"/")
 		if fragment != "" {
 			href += "#" + fragment
 		}
@@ -117,7 +118,7 @@ func (l Links) imageSource(dest, dir string) string {
 	}
 	repoPath := l.repoPath(dest, dir)
 	if l.Assets[repoPath] {
-		return assetURL(repoPath)
+		return l.assetURL(repoPath)
 	}
 	return ""
 }
@@ -131,8 +132,8 @@ func (l Links) repoPath(dest, dir string) string {
 	return repoPath
 }
 
-func assetURL(repoPath string) string {
-	return "/api/files?path=" + url.QueryEscape(repoPath)
+func (l Links) assetURL(repoPath string) string {
+	return "/api" + l.Prefix + "/files?path=" + url.QueryEscape(repoPath)
 }
 
 func isExternal(dest string) bool {

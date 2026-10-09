@@ -18,14 +18,30 @@ func chain(h http.Handler, mws ...middleware) http.Handler {
 	return h
 }
 
-func NewHandler(log *slog.Logger, service *board.Service, spa fs.FS, creds Credentials, webhookSecret string) http.Handler {
+type Login interface {
+	Host() string
+	Token(w http.ResponseWriter, r *http.Request) (string, error)
+	Logout(w http.ResponseWriter, r *http.Request)
+	Routes(mux *http.ServeMux)
+}
+
+func NewHandler(log *slog.Logger, boards *board.Boards, spa fs.FS, logins ...Login) http.Handler {
 	mux := http.NewServeMux()
-	api{log: log, service: service, webhookSecret: webhookSecret}.routes(mux)
+	api{log: log, boards: boards, logins: logins}.routes(mux)
+	for _, login := range logins {
+		login.Routes(mux)
+	}
+	mux.HandleFunc("POST /auth/logout", func(w http.ResponseWriter, r *http.Request) {
+		for _, login := range logins {
+			login.Logout(w, r)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	mux.Handle("/", spaHandler(spa))
-	return chain(mux, recoverPanics(log), logRequests(log), basicAuth(creds))
+	return chain(mux, recoverPanics(log), logRequests(log))
 }
 
 func logRequests(log *slog.Logger) middleware {

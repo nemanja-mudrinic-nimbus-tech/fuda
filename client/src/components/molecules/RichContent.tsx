@@ -1,3 +1,4 @@
+import { BOARD_PREFIX } from '@/lib/boardPath'
 import { useRouter } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
 import { cn } from '@/lib/utils'
@@ -146,7 +147,9 @@ export function RichContent({
         const href = anchor?.getAttribute('href')
         if (!anchor || !href || anchor.target === '_blank' || !href.startsWith('/')) return
         e.preventDefault()
-        void router.navigate({ href })
+        void router.navigate({
+          href: href.startsWith(BOARD_PREFIX + '/') || !BOARD_PREFIX ? href : BOARD_PREFIX + href,
+        })
       }}
     />
   )

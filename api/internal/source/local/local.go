@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -21,16 +22,28 @@ import (
 type Source struct {
 	root       string
 	docsRoot   string
+	boardDir   string
 	workBranch string
+	tasksRepo  bool
 }
 
-func New(root, docsRoot, workBranch string) *Source {
-	return &Source{root: root, docsRoot: docsRoot, workBranch: workBranch}
+func New(root, docsRoot, boardDir, workBranch string) *Source {
+	s := &Source{root: root, docsRoot: docsRoot, boardDir: boardDir, workBranch: workBranch}
+	s.tasksRepo = !isDir(filepath.Join(root, filepath.FromSlash(boardDir), "tasks")) && isDir(filepath.Join(root, "tasks"))
+	return s
+}
+
+func isDir(p string) bool {
+	info, err := os.Stat(p)
+	return err == nil && info.IsDir()
 }
 
 func (s *Source) Head(ctx context.Context, branch string) (string, error) {
 	if branch == s.workBranch {
 		return s.workingTreeHash()
+	}
+	if s.tasksRepo {
+		return "", board.ErrBranchMissing
 	}
 	ref, err := s.resolve(ctx, branch)
 	if err != nil {
@@ -43,6 +56,9 @@ func (s *Source) Head(ctx context.Context, branch string) (string, error) {
 func (s *Source) Files(ctx context.Context, branch string) (map[string][]byte, error) {
 	if branch == s.workBranch {
 		return s.workingTreeFiles()
+	}
+	if s.tasksRepo {
+		return nil, board.ErrBranchMissing
 	}
 	ref, err := s.resolve(ctx, branch)
 	if err != nil {
@@ -80,6 +96,9 @@ func (s *Source) git(ctx context.Context, args ...string) ([]byte, error) {
 
 func (s *Source) walkDocs(visit func(rel string, d fs.DirEntry) error) error {
 	dir := filepath.Join(s.root, s.docsRoot)
+	if s.tasksRepo {
+		dir = s.root
+	}
 	return filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
@@ -88,6 +107,9 @@ func (s *Source) walkDocs(visit func(rel string, d fs.DirEntry) error) error {
 			return err
 		}
 		if d.IsDir() {
+			if s.tasksRepo && p != dir && strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		info, err := d.Info()
@@ -98,8 +120,30 @@ func (s *Source) walkDocs(visit func(rel string, d fs.DirEntry) error) error {
 		if err != nil {
 			return err
 		}
-		return visit(filepath.ToSlash(rel), d)
+		return visit(s.boardPath(filepath.ToSlash(rel)), d)
 	})
+}
+
+// A tasks repository keeps tasks/ at its root; the board reads every board as if it sat in boardDir.
+func (s *Source) boardPath(rel string) string {
+	if s.tasksRepo {
+		return path.Join(s.boardDir, rel)
+	}
+	return rel
+}
+
+func (s *Source) diskPath(boardPath string) (string, error) {
+	rel := path.Clean(boardPath)
+	if s.tasksRepo {
+		var ok bool
+		if rel, ok = strings.CutPrefix(rel, s.boardDir+"/"); !ok {
+			return "", board.ErrNotFound
+		}
+	}
+	if !fs.ValidPath(rel) {
+		return "", board.ErrNotFound
+	}
+	return filepath.Join(s.root, filepath.FromSlash(rel)), nil
 }
 
 func (s *Source) workingTreeHash() (string, error) {
@@ -118,7 +162,11 @@ func (s *Source) workingTreeHash() (string, error) {
 func (s *Source) workingTreeFiles() (map[string][]byte, error) {
 	files := map[string][]byte{}
 	err := s.walkDocs(func(rel string, _ fs.DirEntry) error {
-		content, err := os.ReadFile(filepath.Join(s.root, filepath.FromSlash(rel)))
+		disk, err := s.diskPath(rel)
+		if err != nil {
+			return err
+		}
+		content, err := os.ReadFile(disk)
 		files[rel] = content
 		return err
 	})
