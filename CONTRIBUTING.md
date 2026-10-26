@@ -74,6 +74,11 @@ files in `tasks/`". Add Task files under `docs/board/tasks/` and they appear on 
 
 ## Move `docs/board` into a `fuda-` repository
 
+> **Not usable yet.** The steps below put the Tasks at the root of `main` in the `fuda-` repository,
+> but the GitHub and Azure Boards still read `docs/board/` on `develop`, so a Board moved this way
+> shows up empty, without an error. Keep `docs/board` in the code repository until the hosts read the
+> `fuda-` layout (see "Moves and Assigns from the app" under [TBD](docs/decisions.md#tbd)).
+
 A Board is a `fuda-` repository that the code repository mounts as a submodule at `docs/board`.
 To move an existing `docs/board` there and keep its history:
 
