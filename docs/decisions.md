@@ -10,10 +10,11 @@ with a proposal.
   changed `status` line (plus `claimed` the first time the Task leaves the first Stage) to the
   Task file as that person. Picking Owners commits one changed `owner` line the same way, through the host's web API, as a compare-and-swap, never a
   force-push. Git stays the only source of truth; people and agents keep editing files. fuda
-  never creates Tasks or edits their text. Built for Moves and Assigns on GitHub; see
-  [Moves and Assigns from the app](#moves-and-assigns-from-the-app) for the rest and ADRs
-  [0001](adr/0001-fuda-writes-moves-and-assigns.md) and
-  [0002](adr/0002-tasks-in-their-own-repository.md).
+  never creates Tasks or edits their text. Built on GitHub, Azure DevOps and Local Boards; see
+  [Moves and Assigns from the app](#moves-and-assigns-from-the-app) for the rest. Rejected: a
+  realtime relay (another service to run and pay for; 5 to 10 seconds is fast enough), a database
+  as the truth synced to git (two sources of truth, and agents read git), and a local `git`
+  program (the web and desktop shells share one write path).
 - **Assign writes `owner` in the file's own style.** Comma text stays comma text, a YAML list
   stays a YAML list, and a new `owner` line is comma text right after `status`. Removing every
   Owner deletes the line. The names come from `people.md`, or from the names already on the board
@@ -56,8 +57,10 @@ with a proposal.
   (device flow); the token lives in a sealed cookie, so the server stores no user secret. Every
   request checks the head with that person's token, so a cached Board is never shown to someone
   GitHub would refuse. On Azure DevOps an expired token is refreshed; if that fails the person goes
-  back to login. See
-  [ADR 0003](adr/0003-users-read-and-write-with-their-own-token.md).
+  back to login. Rejected: one fuda bot identity that writes for everyone, because commits would
+  lose their author and fuda would have to enforce access itself. Azure DevOps write access (Basic)
+  is free for only 5 users, so more writers may need paid seats. GitHub cannot limit a token to one
+  branch; fuda itself only ever writes Task files.
 - **One device-flow login for GitHub.** GitHub login uses device flow on web and desktop, with
   only the client id. The GitHub App has "Expire user authorization tokens" turned off, so there is
   no refresh and no client secret. Desktop keeps the token in the OS keychain. Web keeps it in a
@@ -108,19 +111,19 @@ updates [architecture.md](architecture.md).
 
 - **Settled:** fuda will write a Move (`status`) and an Assign (`owner`), and nothing else, as
   one-line commits through the host's web API, on GitHub and Azure DevOps. Task files stay the
-  only source of truth; no database, no realtime service. See ADRs
-  [0001](adr/0001-fuda-writes-moves-and-assigns.md),
-  [0002](adr/0002-tasks-in-their-own-repository.md),
-  [0003](adr/0003-users-read-and-write-with-their-own-token.md) and
-  [0004](adr/0004-desktop-app-with-wails.md). "Read-only" is already replaced above. This will
-  also replace "develop is the board".
+  only source of truth; no database, no realtime service. "Read-only" is already replaced above.
+  This will also replace "develop is the board".
 - **Open:** nothing to decide. Ready for a spec.
 - **Proposal:**
   - **Boards.** A Board is a tasks repository whose name starts with `fuda-`, mounted in its code
     repository as a submodule at `docs/board`. fuda finds Boards from the user's login and lists
     them in the Board button's dropdown in the top bar. URLs start with the host: `/github/<owner>/<repo>/`,
     `/azure/<org>/<project>/<repo>/`, `/local/<folder>/`. An empty `fuda-` repo is an empty Board
-    with default Stages and a hint.
+    with default Stages and a hint. Why: one branch and one Status per Task, and people who need
+    only Tasks get access to Tasks only. Rejected: a board branch in the code repository (two
+    Statuses and a merge back to develop) and a bot that bumps the submodule pointer (noise commits
+    and merge conflicts). Code PRs no longer change Task files, so a PR names its Task by id in its
+    title or branch name.
   - **Login (rest).** GitHub device flow (web: sealed cookie; desktop: OS keychain) is built. So is Microsoft
     Entra ID for Azure DevOps: a confidential client on the web, the OAuth device code on desktop
     (plain HTTP, no MSAL library), scope `user_impersonation`. One process serves
@@ -139,7 +142,8 @@ updates [architecture.md](architecture.md).
     is a Local Board when it has `docs/board/tasks/` or `tasks/`. A Local Board has no In review.
     It cannot tell who changed a file, so a lost conflict says "Someone".
   - **Shells.** One Go core: the web server and a Wails v3 desktop app with the same handler and
-    UI. The web shell is self-hosted at the host's own cost. The desktop app logs in to GitHub or Azure DevOps
+    UI. The web shell is self-hosted at the host's own cost; no free host has a disk and no sleep,
+    so the desktop app is the way to run fuda for nothing. Wails v3 is still beta. The desktop app logs in to GitHub or Azure DevOps
     (device flow, keychain). "Check for updates" compares with GitHub Releases and opens the release page. "Open folder…" in the File menu opens
     a Local Board; the app remembers the folders.
   - **Migration and docs.** `CONTRIBUTING.md` gets a checklist (create the `fuda-` repo,
