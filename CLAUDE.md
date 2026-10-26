@@ -10,8 +10,6 @@ A read-only kanban board and doc reader over a git repo's markdown task files
   task and board-config files), `source/{azure,github,local}`, `markdown`, `httpapi`, `web` (embedded
   SPA), `guide` (embedded Guide pages).
 - `client/` — Vite + React + TypeScript app. Builds into `api/internal/web/dist`; never contains Go.
-- `.scratch/<feature>/issues/` — this repo's own tickets, not `docs/board/tasks`. See
-  `docs/agents/issue-tracker.md`.
 - `docs/` — `architecture.md` (how it works, with diagrams) and `decisions.md` (why, plus TBD items
   with proposals). Read them before structural changes. `CONTRIBUTING.md` — setup, rules, PRs.
 
@@ -39,17 +37,3 @@ Optional and per developer: if `personal-agent.md` exists next to this file, rea
 top of these rules. It is gitignored.
 
 @personal-agent.md
-
-## Agent skills
-
-### Issue tracker
-
-Issues live as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-The five default labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
