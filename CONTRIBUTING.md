@@ -2,6 +2,7 @@
 
 Thanks for helping. fuda is small on purpose; read [docs/architecture.md](docs/architecture.md)
 for how it works and [docs/decisions.md](docs/decisions.md) for why, before larger changes.
+[docs/glossary.md](docs/glossary.md) defines the words both use.
 
 ## Set up
 

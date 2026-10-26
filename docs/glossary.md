@@ -1,6 +1,6 @@
-# fuda
+# Glossary
 
-A kanban board and doc reader over a repository's markdown task files.
+The words fuda uses, and where each one lives in the code.
 
 ## Language
 

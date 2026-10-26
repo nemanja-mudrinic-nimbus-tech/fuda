@@ -5,7 +5,8 @@ built is in [decisions.md § TBD](decisions.md#tbd). Change this file in the sam
 it describes.
 
 For how a repo is set up and how teams use the board, see the Guide pages in
-[`api/internal/guide/pages`](../api/internal/guide/pages) (also served inside the app).
+[`api/internal/guide/pages`](../api/internal/guide/pages) (also served inside the app). The words
+used here (Board, Stage, Move, Assign, Host, …) are defined in [glossary.md](glossary.md).
 
 ## The shape
 
