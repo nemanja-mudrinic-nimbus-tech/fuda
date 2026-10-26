@@ -7,7 +7,7 @@ reviews) in `WORKFLOW.md`.
 |---|---|---|
 | Add | A new file, `status: "backlog"`, `added` = today | A small commit on `develop` |
 | Claim | `owner`, `status: "in progress"`, `claimed` = today. Already owned: pick another task | A small commit on `develop`, **before** branching |
-| Deliver | `status: "merged"`, the PR number in `pr`, an `## Evidence` section | **In the pull request**, in the same diff as the code. While it is open the card shows In review |
+| Deliver | `status: "merged"`, the PR number in `pr`, an `## Evidence` section | **In the pull request**, in the same diff as the code. While a pull request whose title or branch names the task is open, the card shows In review |
 | Retest | `status: "testing"` (and `tester`), then `"validated"`; on failure back to `"in progress"` with what failed | Small commits on `develop` |
 | Blocked | Set or clear `blocked_by` | A small commit |
 | Abandon | `status: "backlog"`, clear `owner` and `claimed`, the reason in `## Evidence` | A small commit |

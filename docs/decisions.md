@@ -6,14 +6,35 @@ with a proposal.
 
 ## Product
 
-- **Read-only.** fuda never writes to a repository. Every change is an ordinary commit by a person
-  or their agent, so git stays the single source of truth and fuda needs only read access.
+- **fuda writes Moves and Assigns through git.** A person drags a card and fuda commits one
+  changed `status` line (plus `claimed` the first time the Task leaves the first Stage) to the
+  Task file as that person. Picking Owners commits one changed `owner` line the same way, through the host's web API, as a compare-and-swap, never a
+  force-push. Git stays the only source of truth; people and agents keep editing files. fuda
+  never creates Tasks or edits their text. Built on GitHub, Azure DevOps and Local Boards; see
+  [Moves and Assigns from the app](#moves-and-assigns-from-the-app) for the rest. Rejected: a
+  realtime relay (another service to run and pay for; 5 to 10 seconds is fast enough), a database
+  as the truth synced to git (two sources of truth, and agents read git), and a local `git`
+  program (the web and desktop shells share one write path).
+- **Assign writes `owner` in the file's own style.** Comma text stays comma text, a YAML list
+  stays a YAML list, and a new `owner` line is comma text right after `status`. Removing every
+  Owner deletes the line. The names come from `people.md`, or from the names already on the board
+  when there is none. Archived Tasks cannot be assigned. An Owner name is one line of text with no
+  commas; fuda refuses other names, so a request cannot change the shape of the `owner` line.
+- **A Move or Assign that loses a conflict goes back.** If other lines of the file changed first, fuda
+  applies the edit again, up to four times. If `status` changed first, the first write wins: the
+  card goes back with a message such as "Ben moved this to Testing just now". An Assign works the
+  same on `owner`: if the Owners changed first, fuda says "Ben set the owners to Cy just
+  now". Archived Tasks and the PR-derived Stage cannot be Move targets.
 - **develop is the board.** Columns and filters come from develop. Claims are committed to develop
   so everyone sees them. main is optional and only adds the "in prod" badge; it never moves a
   card, because anything on main is on develop too.
-- **In review comes from open PRs, matched by content.** A PR delivers a task when its version of
-  the task file sets `merged` or adds the PR's number. Branch names are never used: they are
-  conventions, the diff is a fact.
+- **In review comes from open PRs that name the task.** The board lists its code repositories in
+  `repos.md` (`code_repos: [org/app]`). An open PR in any of them, on any base branch, puts every
+  task whose id is in its title or branch name In review. Such a card is locked: it cannot be
+  dragged, a Move is refused, and nothing is dropped into that Stage by hand. When the PR closes
+  the card returns to its `status` Stage; fuda never sets `merged`. A person who cannot see a code
+  repository still gets the Board, without that repository's In review. Ids are matched whole,
+  case-insensitively: `T-1` does not match `T-12`.
 - **The repository decides its board.** Columns come from an optional `stages.md`, label groups
   from `labels.md`, people from `people.md`. Without them fuda derives everything from the tasks,
   so a repo works on day one.
@@ -24,15 +45,38 @@ with a proposal.
 
 ## Architecture
 
-- **One binary, one container per repository.** The API and the built client ship together
-  (`go:embed`). Several repositories means several containers, not tenants inside one process.
+- **One binary, one container; one Board per repository path.** The API and the built client ship together
+  (`go:embed`). One process serves many Boards, each with its own snapshot, cache and sync.
 - **No database.** The files are the data. A parsed snapshot lives in memory and a copy on disk
   (`FUDA_CACHE_DIR`) so a restart serves the last board at once.
-- **Webhooks plus a fallback interval.** A webhook means "read again now" and its payload is never
-  trusted. Without webhooks the repository is checked every `FUDA_SYNC_INTERVAL`. A cooldown stops
-  bursts; webhooks inside it are deferred, never dropped.
-- **Cheap change detection.** A sync first compares branch head SHAs and downloads files only when
-  they changed.
+- **The client polls; there are no webhooks.** The browser asks for the Board about every 5
+  seconds. Each request first compares the branch head SHA (on GitHub a conditional request, which
+  costs no rate limit when nothing changed) and downloads files only when it moved. Pull requests
+  are re-read at most every `FUDA_SYNC_COOLDOWN`. Updates reach everyone within about 10 seconds.
+- **Each person reads with their own token.** On GitHub they log in with the fuda GitHub App
+  (device flow); the token lives in a sealed cookie, so the server stores no user secret. Every
+  request checks the head with that person's token, so a cached Board is never shown to someone
+  GitHub would refuse. On Azure DevOps an expired token is refreshed; if that fails the person goes
+  back to login. Rejected: one fuda bot identity that writes for everyone, because commits would
+  lose their author and fuda would have to enforce access itself. Azure DevOps write access (Basic)
+  is free for only 5 users, so more writers may need paid seats. GitHub cannot limit a token to one
+  branch; fuda itself only ever writes Task files.
+- **One device-flow login for GitHub.** GitHub login uses device flow on web and desktop, with
+  only the client id. The GitHub App has "Expire user authorization tokens" turned off, so there is
+  no refresh and no client secret. Desktop keeps the token in the OS keychain. Web keeps it in a
+  sealed HttpOnly cookie; the server makes its own key on first start and saves it as `cookie.key`
+  in `FUDA_CACHE_DIR` (mode 0600), so the cache dir must persist: the Docker image declares it as a
+  volume, and the self-host Guide page says so. Cookies are `Secure` except on localhost, so a
+  plain-HTTP LAN address has no working login. The Sign in button in the app bar starts login; there
+  is no automatic login screen. `FUDA_GITHUB_CLIENT_SECRET`, and for GitHub `FUDA_COOKIE_SECRET` and
+  `FUDA_BASE_URL`, are ignored with one warning. Azure keeps its redirect login.
+- **A Board is a `fuda-` repository the person can read.** The Board dropdown lists them from
+  `GET /user/repos`, which only returns repositories the app is installed on. `/` opens the only
+  Board or lists them.
+- **The App slug is required, and install is checked after login.** `FUDA_GITHUB_APP_SLUG` is
+  required with the GitHub source; without it there is no install link, so fuda does not start.
+  The host status carries `appInstalled` from `GET /user/installations`; when that call fails the
+  value is absent and no banner shows. People can close the banner; it returns on reload.
 - **Plain Go packages by responsibility.** No ports-and-adapters layering. `board` holds the
   behaviour and declares the small interfaces it needs; sources satisfy them implicitly. Handlers
   stay thin.
@@ -41,8 +85,8 @@ with a proposal.
   goldmark, singleflight.
 - **Filtering runs in the browser.** The board payload carries frontmatter only, and every filter
   is a URL parameter, so views are shareable and the server stays simple.
-- **Optional built-in basic auth.** One user and password from the environment for hosts without
-  proxy auth. `/healthz` and webhooks stay open; webhooks can require a secret instead.
+- **No shared password and no server host token.** Access to a GitHub Board is decided by GitHub.
+  The `local` source has no login until its ticket lands; keep such a server on a private network.
 - **Configuration is environment only.** Typed and validated at start; no config files for fuda
   itself.
 
@@ -62,6 +106,70 @@ with a proposal.
 
 Decided as a direction, not built. Each has a proposal; a PR that builds one moves it above and
 updates [architecture.md](architecture.md).
+
+### Moves and Assigns from the app
+
+- **Settled:** fuda will write a Move (`status`) and an Assign (`owner`), and nothing else, as
+  one-line commits through the host's web API, on GitHub and Azure DevOps. Task files stay the
+  only source of truth; no database, no realtime service. "Read-only" is already replaced above.
+  This will also replace "develop is the board".
+- **Open:** nothing to decide. Ready for a spec.
+- **Proposal:**
+  - **Boards.** A Board is a tasks repository whose name starts with `fuda-`, mounted in its code
+    repository as a submodule at `docs/board`. fuda finds Boards from the user's login and lists
+    them in the Board button's dropdown in the top bar. URLs start with the host: `/github/<owner>/<repo>/`,
+    `/azure/<org>/<project>/<repo>/`, `/local/<folder>/`. An empty `fuda-` repo is an empty Board
+    with default Stages and a hint. Why: one branch and one Status per Task, and people who need
+    only Tasks get access to Tasks only. Rejected: a board branch in the code repository (two
+    Statuses and a merge back to develop) and a bot that bumps the submodule pointer (noise commits
+    and merge conflicts). Code PRs no longer change Task files, so a PR names its Task by id in its
+    title or branch name.
+  - **Login (rest).** GitHub device flow (web: sealed cookie; desktop: OS keychain) is built. So is Microsoft
+    Entra ID for Azure DevOps: a confidential client on the web, the OAuth device code on desktop
+    (plain HTTP, no MSAL library), scope `user_impersonation`. One process serves
+    both hosts at once (`FUDA_HOSTS=github,azure`), with one cookie or keychain entry per host,
+    per-host logout and "Log out of all". Whether
+    people can consent to the Azure DevOps scope without an admin depends on the tenant's consent
+    policy; not checked against a real tenant yet. A narrower `vso.code_write` scope is not used.
+    Read-only Boards: Azure DevOps asks the Contribute permission of the repository.
+  - **Move and Assign (rest).** Built for GitHub and Azure DevOps, including read-only Boards: fuda asks GitHub
+    whether the account can push, keeps the answer for a minute, and refuses Move and Assign
+    for read-only accounts. The board shows a note and no card drags. Local Boards write the file
+    on disk, in the desktop app only: a server shows them read-only, because they have no login.
+    No card order is stored. The task sheet has a "Move to" menu, so a Move does not need a mouse.
+  - **Local Board.** A folder (desktop: "Open folder…"; web: `FUDA_LOCAL_PATH`). Moves and Assigns
+    write the file on disk and the person commits. fuda polls the folder; same conflict rule. A folder
+    is a Local Board when it has `docs/board/tasks/` or `tasks/`. A Local Board has no In review.
+    It cannot tell who changed a file, so a lost conflict says "Someone".
+  - **Shells.** One Go core: the web server and a Wails v3 desktop app with the same handler and
+    UI. The web shell is self-hosted at the host's own cost; no free host has a disk and no sleep,
+    so the desktop app is the way to run fuda for nothing. Wails v3 is still beta. The desktop app logs in to GitHub or Azure DevOps
+    (device flow, keychain). "Check for updates" compares with GitHub Releases and opens the release page. "Open folder…" in the File menu opens
+    a Local Board; the app remembers the folders.
+  - **Migration and docs.** `CONTRIBUTING.md` gets a checklist (create the `fuda-` repo,
+    `git subtree split --prefix=docs/board`, push as `main`, replace `docs/board` with the
+    submodule) and a short section on `git submodule update --remote docs/board`. The code
+    repository's agent rules say to update the submodule before reading Tasks.
+  - **Removed.** Nothing left to remove. The server's host token, `FUDA_AUTH_USER`/
+    `FUDA_AUTH_PASSWORD`, webhooks and matching PRs by their version of the Task file are gone.
+
+### Signing and notarizing the macOS app
+
+- **Settled:** `fuda.app` ships unsigned. People right-click, Open the first time.
+- **Open:** whether to pay for an Apple Developer account.
+- **Proposal:** Sign `fuda.app` with a Developer ID certificate and notarize it in the `release`
+  workflow (`codesign`, `xcrun notarytool`, `stapler`), with the certificate and App Store Connect
+  key as repository secrets. Then the first-run warning goes away.
+
+### Installing desktop updates in place
+
+- **Settled:** "Check for updates" tells people a newer version exists and opens its release page.
+  It does not install it.
+- **Open:** when to install from inside the app.
+- **Proposal:** after the macOS app is signed and notarized, publish a checksum file with each
+  release in the `release` workflow, check the downloaded asset against it, and replace the whole
+  `fuda.app` bundle (replacing only the inner binary breaks the signature and Gatekeeper may
+  refuse to open the app). Until then, installing is a manual download.
 
 ### History-based dates and insights
 
@@ -89,11 +197,3 @@ updates [architecture.md](architecture.md).
 - **Open:** which host is next.
 - **Proposal:** GitLab, when someone needs it: project archive for `docs/`, merge requests and
   their changes for In review.
-
-### Live updates
-
-- **Settled:** the client refetches the board every minute, on window focus, and shortly after
-  the Sync button.
-- **Open:** whether a push channel is worth its complexity.
-- **Proposal:** a server-sent events endpoint that emits the snapshot's head SHAs after each
-  swap; the client refetches when they change. No change to the data model.

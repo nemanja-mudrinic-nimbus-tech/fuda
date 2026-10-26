@@ -145,6 +145,7 @@ people:
 ---
 | table | stays |
 `),
+		"docs/board/repos.md": []byte("---\ncode_repos: [acme/app, acme/web]\n---\n"),
 	}
 	r := Parse(files, layout)
 	if len(r.Problems) != 0 {
@@ -161,6 +162,7 @@ people:
 	})
 	checkDeep(t, "label colors", r.Config.LabelColors, map[string]string{"type:bug": "#ff0000"})
 	checkDeep(t, "people", r.Config.People, []Person{{Name: "Nemanja Mudrinic", Aliases: []string{"Nemanja"}}})
+	checkDeep(t, "code repos", r.Config.CodeRepos, []string{"acme/app", "acme/web"})
 }
 
 func TestParseInvalidConfigIsIgnored(t *testing.T) {
@@ -168,13 +170,14 @@ func TestParseInvalidConfigIsIgnored(t *testing.T) {
 		"docs/board/stages.md": "---\nstages:\n  - status: [backlog]\n---\n",
 		"docs/board/labels.md": "---\ngroups: [type]\n---\n",
 		"docs/board/people.md": "# no frontmatter\n",
+		"docs/board/repos.md":  "---\ncode_repos: [not-a-repo]\n---\n",
 	}
 	for p, content := range cases {
 		r := Parse(map[string][]byte{p: []byte(content)}, layout)
 		if len(r.Problems) != 1 || r.Problems[0].Path != p {
 			t.Fatalf("%s: want one problem, got %+v", p, r.Problems)
 		}
-		if r.Config.Stages != nil || r.Config.LabelGroups != nil || r.Config.People != nil {
+		if r.Config.Stages != nil || r.Config.LabelGroups != nil || r.Config.People != nil || r.Config.CodeRepos != nil {
 			t.Fatalf("%s: invalid config must be ignored, got %+v", p, r.Config)
 		}
 	}

@@ -1,11 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo } from 'react'
+import { EmptyBoard } from '@/components/molecules/EmptyBoard'
 import { NoMatches } from '@/components/molecules/NoMatches'
 import { Board } from '@/components/organisms/Board'
+import { BoardList } from '@/components/organisms/BoardList'
 import { ListView } from '@/components/organisms/ListView'
 import { FilterBar } from '@/components/organisms/FilterBar'
 import { TaskSheet } from '@/components/organisms/TaskSheet'
 import { boardSearchSchema, filterCards, sortCards } from '@/lib/filters'
+import { BOARD_PREFIX } from '@/lib/boardPath'
 import { useBoard, useTextSearch } from '@/lib/queries'
 
 export const Route = createFileRoute('/')({
@@ -24,6 +27,7 @@ function BoardPage() {
   )
   const taskIds = useMemo(() => data?.cards.map((c) => c.id) ?? [], [data])
 
+  if (!BOARD_PREFIX) return <BoardList />
   if (error) {
     return (
       <p className="p-6 text-sm text-muted-foreground">
@@ -41,12 +45,19 @@ function BoardPage() {
         cards={data.cards}
         shown={cards.length}
       />
-      {cards.length === 0 && data.cards.length > 0 ? (
+      {data.readOnly && (
+        <p className="px-4 pb-2 text-sm text-muted-foreground">
+          This board is read-only: your account can read this repository but not write to it.
+        </p>
+      )}
+      {data.cards.length === 0 ? (
+        <EmptyBoard />
+      ) : cards.length === 0 ? (
         <NoMatches />
       ) : search.view === 'list' ? (
         <ListView columns={data.columns} cards={cards} />
       ) : (
-        <Board columns={data.columns} cards={cards} prLink={data.prLink} />
+        <Board columns={data.columns} cards={cards} readOnly={data.readOnly} />
       )}
       <TaskSheet taskIds={taskIds} prLink={data.prLink} />
     </main>

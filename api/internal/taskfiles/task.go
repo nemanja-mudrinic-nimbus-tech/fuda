@@ -33,6 +33,14 @@ func splitFrontmatter(content []byte) (front, body []byte, err error) {
 	return rest[:end], rest[end+len("\n---\n"):], nil
 }
 
+func ParseTask(p string, content []byte) (Task, error) {
+	t, reason := parseTask(p, content, false)
+	if reason != "" {
+		return Task{}, errors.New(reason)
+	}
+	return t, nil
+}
+
 func parseTask(p string, content []byte, archived bool) (Task, string) {
 	front, body, err := splitFrontmatter(content)
 	if err != nil {

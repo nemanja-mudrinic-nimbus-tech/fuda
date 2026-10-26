@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ArchiveRouteImport } from './routes/archive'
+import { Route as BoardRouteImport } from './routes/board'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as GuideSplatRouteImport } from './routes/guide/$'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const ArchiveRoute = ArchiveRouteImport.update({
   id: '/archive',
   path: '/archive',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardRoute = BoardRouteImport.update({
+  id: '/board',
+  path: '/board',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InsightsRoute = InsightsRouteImport.update({
@@ -44,6 +50,7 @@ const GuideSplatRoute = GuideSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/board': typeof BoardRoute
   '/insights': typeof InsightsRoute
   '/docs/$': typeof DocsSplatRoute
   '/guide/$': typeof GuideSplatRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/board': typeof BoardRoute
   '/insights': typeof InsightsRoute
   '/docs/$': typeof DocsSplatRoute
   '/guide/$': typeof GuideSplatRoute
@@ -59,21 +67,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/board': typeof BoardRoute
   '/insights': typeof InsightsRoute
   '/docs/$': typeof DocsSplatRoute
   '/guide/$': typeof GuideSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/archive' | '/insights' | '/docs/$' | '/guide/$'
+  fullPaths: '/' | '/archive' | '/board' | '/insights' | '/docs/$' | '/guide/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/archive' | '/insights' | '/docs/$' | '/guide/$'
-  id: '__root__' | '/' | '/archive' | '/insights' | '/docs/$' | '/guide/$'
+  to: '/' | '/archive' | '/board' | '/insights' | '/docs/$' | '/guide/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/archive'
+    | '/board'
+    | '/insights'
+    | '/docs/$'
+    | '/guide/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchiveRoute: typeof ArchiveRoute
+  BoardRoute: typeof BoardRoute
   InsightsRoute: typeof InsightsRoute
   DocsSplatRoute: typeof DocsSplatRoute
   GuideSplatRoute: typeof GuideSplatRoute
@@ -93,6 +110,13 @@ declare module '@tanstack/react-router' {
       path: '/archive'
       fullPath: '/archive'
       preLoaderRoute: typeof ArchiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/board': {
+      id: '/board'
+      path: '/board'
+      fullPath: '/board'
+      preLoaderRoute: typeof BoardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/insights': {
@@ -122,6 +146,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchiveRoute: ArchiveRoute,
+  BoardRoute: BoardRoute,
   InsightsRoute: InsightsRoute,
   DocsSplatRoute: DocsSplatRoute,
   GuideSplatRoute: GuideSplatRoute,

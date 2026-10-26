@@ -1,9 +1,6 @@
 package board
 
 import (
-	"slices"
-	"strings"
-
 	"fuda/internal/taskfiles"
 )
 
@@ -23,28 +20,27 @@ type Column struct {
 }
 
 type Card struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	Status       string   `json:"status"`
-	Column       string   `json:"column"`
-	Owners       []string `json:"owners"`
-	Testers      []string `json:"testers"`
-	Labels       []string `json:"labels"`
-	Prefix       string   `json:"prefix"`
-	Added        string   `json:"added"`
-	Claimed      string   `json:"claimed"`
-	Done         string   `json:"done,omitempty"`
-	PRs          []int    `json:"prs"`
-	PRRef        string   `json:"prRef,omitempty"`
-	OpenPRs      []int    `json:"openPrs"`
-	BlockedBy    string   `json:"blockedBy,omitempty"`
-	BlockedByIDs []string `json:"blockedByIds"`
-	Blocks       []string `json:"blocks"`
-	References   []string `json:"references"`
-	ReferencedBy []string `json:"referencedBy"`
-	InProd       bool     `json:"inProd"`
-	NewInPR      bool     `json:"newInPr"`
-	Path         string   `json:"path"`
+	ID           string     `json:"id"`
+	Title        string     `json:"title"`
+	Status       string     `json:"status"`
+	Column       string     `json:"column"`
+	Owners       []string   `json:"owners"`
+	Testers      []string   `json:"testers"`
+	Labels       []string   `json:"labels"`
+	Prefix       string     `json:"prefix"`
+	Added        string     `json:"added"`
+	Claimed      string     `json:"claimed"`
+	Done         string     `json:"done,omitempty"`
+	PRs          []int      `json:"prs"`
+	PRRef        string     `json:"prRef,omitempty"`
+	OpenPRs      []LinkedPR `json:"openPrs"`
+	BlockedBy    string     `json:"blockedBy,omitempty"`
+	BlockedByIDs []string   `json:"blockedByIds"`
+	Blocks       []string   `json:"blocks"`
+	References   []string   `json:"references"`
+	ReferencedBy []string   `json:"referencedBy"`
+	InProd       bool       `json:"inProd"`
+	Path         string     `json:"path"`
 }
 
 type Facets struct {
@@ -67,10 +63,9 @@ type Problem struct {
 }
 
 type Inputs struct {
-	Develop    taskfiles.Result
-	Main       *taskfiles.Result
-	OpenPRs    map[string][]int
-	AddedInPRs []taskfiles.Task
+	Develop taskfiles.Result
+	Main    *taskfiles.Result
+	OpenPRs map[string][]LinkedPR
 }
 
 var inProdStatuses = map[string]bool{"merged": true, "testing": true, "validated": true}
@@ -108,34 +103,6 @@ func Build(in Inputs) Board {
 			InProd:       inProd,
 			Path:         t.Path,
 		})
-	}
-
-	if columns.review != "" {
-		added := slices.Clone(in.AddedInPRs)
-		slices.SortFunc(added, func(a, b taskfiles.Task) int { return strings.Compare(a.ID, b.ID) })
-		for _, t := range added {
-			cards = append(cards, Card{
-				ID:           t.ID,
-				Title:        t.Title,
-				Status:       t.Status,
-				Column:       columns.review,
-				Owners:       people.canonical(t.Owners),
-				Testers:      people.canonical(t.Testers),
-				Labels:       labelStrings(t.Labels),
-				Prefix:       idPrefix(t.ID),
-				Added:        t.Added,
-				Claimed:      t.Claimed,
-				PRs:          orEmpty(t.PRs),
-				OpenPRs:      orEmpty(in.OpenPRs[t.ID]),
-				BlockedBy:    t.BlockedBy,
-				BlockedByIDs: []string{},
-				Blocks:       []string{},
-				References:   []string{},
-				ReferencedBy: []string{},
-				NewInPR:      true,
-				Path:         t.Path,
-			})
-		}
 	}
 
 	return Board{

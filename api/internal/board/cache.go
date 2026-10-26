@@ -59,7 +59,7 @@ func (s *Service) Restore() error {
 	if err := gob.NewDecoder(f).Decode(&cached); err != nil {
 		return fmt.Errorf("read %s: %w", f.Name(), err)
 	}
-	snap := s.build(taskfiles.Parse(cached.Develop, s.layout()), s.parseMain(cached.Main), cached.Develop, cached.Heads, reviews{})
+	snap := s.build(taskfiles.Parse(cached.Develop, s.layout()), s.parseMain(cached.Main), cached.Develop, cached.Heads, prsByTask{})
 	s.snapshot.Store(snap)
 	s.markSyncedAt(cached.Heads, snap, cached.SavedAt)
 	return nil

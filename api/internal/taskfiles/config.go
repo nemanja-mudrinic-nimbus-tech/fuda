@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"regexp"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -34,6 +36,9 @@ func parseConfig(files map[string][]byte, layout Layout, problems *[]Problem) Co
 	})
 	load("people.md", func(keys map[string]*yaml.Node) error {
 		return decodePeople(required(keys, "people"), &c.People)
+	})
+	load("repos.md", func(keys map[string]*yaml.Node) error {
+		return decodeCodeRepos(required(keys, "code_repos"), &c.CodeRepos)
 	})
 	return c
 }
@@ -141,5 +146,24 @@ func decodePeople(n *yaml.Node, dst *[]Person) error {
 		people = append(people, Person(e))
 	}
 	*dst = people
+	return nil
+}
+
+var codeRepo = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*){1,2}$`)
+
+func decodeCodeRepos(n *yaml.Node, dst *[]string) error {
+	if n == missingKey {
+		return errors.New("code_repos: missing the code_repos key")
+	}
+	repos, err := stringList(n)
+	if err != nil {
+		return fmt.Errorf("code_repos: %w", err)
+	}
+	for _, repo := range repos {
+		if !codeRepo.MatchString(repo) || strings.Contains(repo, "..") {
+			return fmt.Errorf("code_repos: %q is not a repository like org/app", repo)
+		}
+	}
+	*dst = repos
 	return nil
 }

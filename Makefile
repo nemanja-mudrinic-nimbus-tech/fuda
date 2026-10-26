@@ -1,7 +1,16 @@
 SHELL := /bin/bash
 ENV := set -a; [ -f .env ] && . ./.env; set +a;
 
-.PHONY: dev dev-api dev-client webhook check check-api check-client fmt build client docker clean
+.PHONY: dev dev-api dev-client check check-api check-client fmt build client docker desktop desktop-macos desktop-windows clean
+
+VERSION ?= dev
+GITHUB_CLIENT_ID ?=
+GITHUB_APP_SLUG ?=
+AZURE_CLIENT_ID ?=
+ARCH ?= $(shell go env GOARCH)
+DESKTOP_IDS := $(ENV) github_id="$(GITHUB_CLIENT_ID)"; github_slug="$(GITHUB_APP_SLUG)"; azure_id="$(AZURE_CLIENT_ID)"; \
+	[ -n "$${github_id:-$$FUDA_GITHUB_CLIENT_ID}" ] && [ -n "$${github_slug:-$$FUDA_GITHUB_APP_SLUG}" ] || { echo "The desktop build needs GITHUB_CLIENT_ID and GITHUB_APP_SLUG (or FUDA_GITHUB_CLIENT_ID and FUDA_GITHUB_APP_SLUG in the env file)"; exit 1; };
+DESKTOP_LDFLAGS := -X main.version=$(VERSION) -X main.githubClientID=$${github_id:-$$FUDA_GITHUB_CLIENT_ID} -X main.githubAppSlug=$${github_slug:-$$FUDA_GITHUB_APP_SLUG} -X main.azureClientID=$${azure_id:-$$FUDA_AZURE_CLIENT_ID}
 
 dev:
 	$(MAKE) -j2 dev-api dev-client
@@ -12,9 +21,6 @@ dev-api:
 
 dev-client: client/node_modules
 	pnpm -C client dev
-
-webhook:
-	$(ENV) scripts/webhook.sh $(or $(HOST),github)
 
 check: check-api check-client
 
@@ -36,6 +42,21 @@ client: client/node_modules
 
 build: client
 	go -C api build -o ../bin/fuda ./cmd/fuda
+
+desktop: desktop-macos desktop-windows
+
+desktop-macos: client
+	$(DESKTOP_IDS) \
+	CGO_ENABLED=1 GOOS=darwin GOARCH=$(ARCH) MACOSX_DEPLOYMENT_TARGET=13.0 CGO_LDFLAGS=-mmacosx-version-min=13.0 \
+		go -C api build -trimpath -ldflags="-s -w $(DESKTOP_LDFLAGS)" -o ../bin/fuda.app/Contents/MacOS/fuda-desktop ./cmd/fuda-desktop
+	mkdir -p bin/fuda.app/Contents/Resources
+	cp api/cmd/fuda-desktop/icon.icns bin/fuda.app/Contents/Resources/icon.icns
+	sed 's/@VERSION@/$(VERSION)/' api/cmd/fuda-desktop/Info.plist > bin/fuda.app/Contents/Info.plist
+
+desktop-windows: client
+	$(DESKTOP_IDS) \
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
+		go -C api build -trimpath -ldflags="-s -w -H=windowsgui $(DESKTOP_LDFLAGS)" -o ../bin/fuda-desktop.exe ./cmd/fuda-desktop
 
 docker:
 	docker build -t fuda .

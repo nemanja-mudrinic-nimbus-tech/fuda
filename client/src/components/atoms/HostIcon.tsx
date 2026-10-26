@@ -1,8 +1,8 @@
 import { FolderGit2 } from 'lucide-react'
-import type { Origin } from '@/lib/api'
+import type { Host } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-export function HostIcon({ host, className }: { host: Origin['host']; className?: string }) {
+export function HostIcon({ host, className }: { host: Host; className?: string }) {
   if (host === 'github') {
     return (
       <svg viewBox="0 0 16 16" aria-hidden="true" className={cn('fill-current', className)}>
