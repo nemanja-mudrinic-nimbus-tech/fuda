@@ -335,7 +335,7 @@ Board routes sit under `/api/<host>/<board path>`, for example `/api/github/<own
 | `GET /api/guide`, `GET /api/guide/{slug}` | Guide pages. |
 | `POST …/sync` | 202, or 429 inside the cooldown. |
 | `POST …/tasks/{id}/move` | Body `{"seen": "<status the client showed>", "column": "<column id>"}`, `application/json`. 204 when committed. 409 with a message when `status` changed first. 403 for archived Tasks, PR-derived Stages and sources that cannot write. 401 when the login expired. |
-| `POST …/tasks/{id}/assign` | Body `{"seen": ["<owners the client showed>"], "owners": ["<short names>"]}`, `application/json`. 204 when committed. 409 with a message when the owners changed first. 403 for archived Tasks and sources that cannot write. 401 when the login expired. |
+| `POST …/tasks/{id}/assign` | Body `{"seen": ["<owners the client showed>"], "owners": ["<short names>"]}`, `application/json`. 204 when committed. 409 with a message when the owners changed first. 400 when a name is empty, has a comma or a control character. 403 for archived Tasks and sources that cannot write. 401 when the login expired. |
 | `GET /api/boards` | `{boards, hosts}`. `boards` are the Boards the caller can open on every host they are logged in to: `host`, `repo`, `path`, `title`. `hosts` has one entry per login host: `host`, `loggedIn`, `login` (where to log in), and `error` when that host's list failed. Always 200: a host without a login only shows `loggedIn: false`. |
 | `GET /auth/<host>/login?return=`, `GET /auth/<host>/callback`, `POST /auth/<host>/logout` | The login flow of `github` or `azure` (only when `FUDA_HOSTS` includes it). `return` must be a path on this site. Logout clears only that host. |
 | `POST /auth/logout` | Clears every host's login. 204. |

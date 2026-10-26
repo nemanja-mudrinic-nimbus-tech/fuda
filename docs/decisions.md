@@ -17,7 +17,8 @@ with a proposal.
 - **Assign writes `owner` in the file's own style.** Comma text stays comma text, a YAML list
   stays a YAML list, and a new `owner` line is comma text right after `status`. Removing every
   Owner deletes the line. The names come from `people.md`, or from the names already on the board
-  when there is none. Archived Tasks cannot be assigned.
+  when there is none. Archived Tasks cannot be assigned. An Owner name is one line of text with no
+  commas; fuda refuses other names, so a request cannot change the shape of the `owner` line.
 - **A Move or Assign that loses a conflict goes back.** If other lines of the file changed first, fuda
   applies the edit again, up to four times. If `status` changed first, the first write wins: the
   card goes back with a message such as "Ben moved this to Testing just now". An Assign works the

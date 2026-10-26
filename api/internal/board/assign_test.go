@@ -113,6 +113,19 @@ func TestAssignRefusals(t *testing.T) {
 	check(t, "writes", host.writes, 0)
 }
 
+func TestAssignRefusesOwnerNamesThatWouldChangeTheFileShape(t *testing.T) {
+	host := newFakeHost(map[string]string{taskPath: taskContent("backlog", "owner: [Cy]\n")})
+	s := newMoveService(t, host)
+
+	for _, name := range []string{"", "  ", "Ann\nBen", "Doe, John", "Ann\tBen"} {
+		err := s.Assign(context.Background(), AssignRequest{TaskID: "T-1", FromOwners: []string{"Cy"}, Owners: []string{"Ann", name}})
+		if !errors.Is(err, ErrInvalidOwner) {
+			t.Errorf("%q: got %v, want ErrInvalidOwner", name, err)
+		}
+	}
+	check(t, "writes", host.writes, 0)
+}
+
 func TestAssignNeedsASourceThatWrites(t *testing.T) {
 	s := NewService(fakeSource{files: map[string][]byte{taskPath: []byte(taskContent("backlog", ""))}}, Options{DocsRoot: "docs", BoardDir: "docs/board", WorkBranch: "develop", ProdBranch: "main"})
 	if err := s.Poll(context.Background()); err != nil {
