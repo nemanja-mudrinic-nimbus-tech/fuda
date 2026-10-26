@@ -28,7 +28,7 @@ type hostLinks struct {
 
 func newSource(cfg config.Config, folders *Folders, id board.ID) (board.Source, hostLinks, error) {
 	switch id.Host {
-	case "local":
+	case board.HostLocal:
 		folder, ok := folders.Path(id)
 		if !ok {
 			return nil, hostLinks{}, board.ErrNotFound
