@@ -1,14 +1,17 @@
 # fuda
 
-A read-only kanban board and doc reader over a git repo's markdown task files
-(`docs/board/tasks/*.md`). One Go binary serves the API and the embedded React app.
+A kanban board and doc reader over a git repo's markdown task files (`docs/board/tasks/*.md`). It
+writes two things back, a Move (`status`) and an Assign (`owner`), as commits with the user's own
+token. One Go core serves the API and the embedded React app, as a web server and a desktop app.
 
 ## Layout
 
-- `api/` — Go module. `cmd/fuda` wires config and server; packages in `internal/` by responsibility:
-  `config`, `board` (service, sync, cache, rules, `Source` interface), `taskfiles` (parses a repo's
-  task and board-config files), `source/{azure,github,local}`, `markdown`, `httpapi`, `web` (embedded
-  SPA), `guide` (embedded Guide pages).
+- `api/` — Go module. `cmd/fuda` wires config and server, `cmd/fuda-desktop` the Wails app; packages
+  in `internal/` by responsibility: `config`, `board` (registry, service, sync, cache, rules, Move
+  and Assign, `Source` interface), `taskfiles` (parses and edits a repo's task and board-config
+  files), `source/{azure,github,local}`, `login` (device flow and OAuth), `keychain`, `workspace`
+  (hosts and local folders to Boards), `markdown`, `httpapi`, `web` (embedded SPA), `guide`
+  (embedded Guide pages).
 - `client/` — Vite + React + TypeScript app. Builds into `api/internal/web/dist`; never contains Go.
 - `docs/` — `architecture.md` (how it works, with diagrams), `decisions.md` (why, plus TBD items
   with proposals) and `glossary.md` (the domain words and where they live in the code). Read them
