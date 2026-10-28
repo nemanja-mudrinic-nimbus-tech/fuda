@@ -103,10 +103,14 @@ func (s *Service) load(ctx context.Context) error {
 	if current != nil && maps.Equal(current.heads, heads) {
 		found, err := s.openReviews(ctx, current.develop)
 		if err != nil {
+			if current.day != s.now().Format(time.DateOnly) {
+				current = s.build(current.develop, current.main, current.files, heads, current.reviews)
+				s.snapshot.Store(current)
+			}
 			s.markSynced(heads, current)
 			return fmt.Errorf("open pull requests: %w", err)
 		}
-		if !sameReviews(current.reviews, found) {
+		if !sameReviews(current.reviews, found) || current.day != s.now().Format(time.DateOnly) {
 			current = s.build(current.develop, current.main, current.files, heads, found)
 			s.snapshot.Store(current)
 		}
@@ -161,6 +165,7 @@ func (s *Service) parseMain(files map[string][]byte) *taskfiles.Result {
 }
 
 func (s *Service) build(develop taskfiles.Result, main *taskfiles.Result, files map[string][]byte, heads map[string]string, found prsByTask) *snapshot {
+	today := s.now()
 	docs := map[string][]byte{}
 	docSet := map[string]bool{}
 	assets := map[string][]byte{}
@@ -189,7 +194,9 @@ func (s *Service) build(develop taskfiles.Result, main *taskfiles.Result, files 
 			Develop: develop,
 			Main:    main,
 			OpenPRs: found,
+			Today:   today,
 		}),
+		day:     today.Format(time.DateOnly),
 		develop: develop,
 		main:    main,
 		files:   files,

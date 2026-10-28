@@ -22,6 +22,9 @@ stages:
     status: [testing, in qa]
   - name: Validated
     status: [validated]
+  - name: Done
+    when: done
+    days: 14
 ---
 ```
 
@@ -32,7 +35,15 @@ stages:
 - `activity: true` makes the column's cards show the latest entry of the task's `## Activity`
   section in short form: `<actor> · <event>`. A card without that section looks the same as in
   any other column.
-- A status no column lists gets its own column at the end, marked unknown.
+- `when: done` adds a Done column with the archived tasks whose `done` date is within the last
+  `days` days, today included, newest first whatever the board's sort. Without `days` the window is 14 days. An archived
+  task without a valid `done` date (`YYYY-MM-DD`) is not in the column. Older tasks show only on
+  the Archive tab. The column is always the last one and takes no status list. Its cards cannot
+  be moved or assigned, and nothing can be dropped on it. The filters apply to it as to the other
+  columns. Without a `when: done` entry, done tasks show only on the Archive tab.
+- `days` must be a positive whole number. Any other value is listed under Problems and the column
+  uses 14. Only one `when: done` entry counts; a second one is listed under Problems and ignored.
+- A status no column lists gets its own column, marked unknown, before the Done column.
 
 ## labels.md: label groups, values and colours
 

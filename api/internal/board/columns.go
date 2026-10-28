@@ -19,6 +19,7 @@ type columns struct {
 	list     []Column
 	byStatus map[string]string
 	review   string
+	done     *Column
 	activity map[string]bool
 }
 
@@ -28,11 +29,15 @@ func buildColumns(stages []taskfiles.Stage, tasks []taskfiles.Task) *columns {
 	}
 	c := &columns{byStatus: map[string]string{}, activity: map[string]bool{}}
 	for _, s := range stages {
-		col := Column{ID: slug(s.Name), Name: s.Name, Statuses: orEmpty(s.Statuses), PROpen: s.WhenPROpen, Activity: s.Activity}
-		c.list = append(c.list, col)
+		col := Column{ID: slug(s.Name), Name: s.Name, Statuses: orEmpty(s.Statuses), PROpen: s.WhenPROpen, Done: s.WhenDone, Days: s.Days, Activity: s.Activity}
 		if s.Activity {
 			c.activity[col.ID] = true
 		}
+		if s.WhenDone {
+			c.done = &col
+			continue
+		}
+		c.list = append(c.list, col)
 		for _, status := range s.Statuses {
 			c.byStatus[normalizeStatus(status)] = col.ID
 		}
@@ -48,6 +53,9 @@ func buildColumns(stages []taskfiles.Stage, tasks []taskfiles.Task) *columns {
 		col := Column{ID: "unknown-" + slug(status), Name: t.Status, Statuses: []string{t.Status}, Unknown: true}
 		c.list = append(c.list, col)
 		c.byStatus[status] = col.ID
+	}
+	if c.done != nil {
+		c.list = append(c.list, *c.done)
 	}
 	return c
 }

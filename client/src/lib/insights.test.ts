@@ -29,6 +29,7 @@ function card(id: string, overrides: Partial<Card> = {}): Card {
     references: [],
     referencedBy: [],
     inProd: false,
+    archived: false,
     path: '',
     ...overrides,
   }

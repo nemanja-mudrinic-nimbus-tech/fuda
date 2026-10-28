@@ -1,6 +1,10 @@
 package board
 
 import (
+	"cmp"
+	"slices"
+	"time"
+
 	"fuda/internal/taskfiles"
 )
 
@@ -16,6 +20,8 @@ type Column struct {
 	Name     string   `json:"name"`
 	Statuses []string `json:"statuses"`
 	PROpen   bool     `json:"prOpen"`
+	Done     bool     `json:"done"`
+	Days     int      `json:"days,omitempty"`
 	Unknown  bool     `json:"unknown"`
 	Activity bool     `json:"activity"`
 }
@@ -42,6 +48,7 @@ type Card struct {
 	ReferencedBy []string            `json:"referencedBy"`
 	InProd       bool                `json:"inProd"`
 	Activity     *taskfiles.Activity `json:"activity,omitempty"`
+	Archived     bool                `json:"archived"`
 	Path         string              `json:"path"`
 }
 
@@ -68,18 +75,21 @@ type Inputs struct {
 	Develop taskfiles.Result
 	Main    *taskfiles.Result
 	OpenPRs map[string][]LinkedPR
+	Today   time.Time
 }
 
 var inProdStatuses = map[string]bool{"merged": true, "testing": true, "validated": true}
 
 func Build(in Inputs) Board {
 	tasks := in.Develop.Tasks
-	people := newPeople(in.Develop.Config.People, tasks)
-	refs := newReferences(tasks)
 	columns := buildColumns(in.Develop.Config.Stages, tasks)
+	done := recentlyDone(columns.done, in.Develop.Archived, in.Today)
+	shown := slices.Concat(tasks, done)
+	people := newPeople(in.Develop.Config.People, shown)
+	refs := newReferences(tasks)
 	prodStatus := mainStatuses(in.Main)
 
-	cards := make([]Card, 0, len(tasks))
+	cards := make([]Card, 0, len(shown))
 	for _, t := range tasks {
 		openPRs := in.OpenPRs[t.ID]
 		inProd := inProdStatuses[normalizeStatus(prodStatus[t.ID])]
@@ -108,12 +118,66 @@ func Build(in Inputs) Board {
 			Path:         t.Path,
 		})
 	}
+	for _, t := range done {
+		c := archivedCard(t)
+		c.Column = columns.done.ID
+		c.Owners = people.canonical(t.Owners)
+		c.Testers = people.canonical(t.Testers)
+		cards = append(cards, c)
+	}
 
+	facetsFrom := in.Develop
+	facetsFrom.Tasks = shown
 	return Board{
 		Columns:  columns.list,
 		Cards:    cards,
-		Facets:   buildFacets(in.Develop, people),
+		Facets:   buildFacets(facetsFrom, people),
 		Problems: problems(in.Develop.Problems),
+	}
+}
+
+func recentlyDone(column *Column, archived []taskfiles.Task, today time.Time) []taskfiles.Task {
+	if column == nil {
+		return nil
+	}
+	day := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	first := day.AddDate(0, 0, 1-column.Days)
+	var out []taskfiles.Task
+	for _, t := range archived {
+		done, err := time.Parse(time.DateOnly, t.Done)
+		if err != nil || done.Before(first) || done.After(day) {
+			continue
+		}
+		out = append(out, t)
+	}
+	slices.SortStableFunc(out, func(a, b taskfiles.Task) int {
+		return cmp.Or(cmp.Compare(b.Done, a.Done), cmp.Compare(a.ID, b.ID))
+	})
+	return out
+}
+
+func archivedCard(t taskfiles.Task) Card {
+	return Card{
+		ID:           t.ID,
+		Title:        t.Title,
+		Status:       t.Status,
+		Owners:       orEmpty(t.Owners),
+		Testers:      orEmpty(t.Testers),
+		Labels:       labelStrings(t.Labels),
+		Prefix:       idPrefix(t.ID),
+		Added:        t.Added,
+		Claimed:      t.Claimed,
+		Done:         t.Done,
+		PRs:          orEmpty(t.PRs),
+		PRRef:        t.PRRef,
+		OpenPRs:      []LinkedPR{},
+		BlockedBy:    t.BlockedBy,
+		BlockedByIDs: []string{},
+		Blocks:       []string{},
+		References:   []string{},
+		ReferencedBy: []string{},
+		Archived:     true,
+		Path:         t.Path,
 	}
 }
 

@@ -6,6 +6,8 @@ export type Column = {
   name: string
   statuses: string[]
   prOpen: boolean
+  done: boolean
+  days?: number
   unknown: boolean
   activity: boolean
 }
@@ -32,6 +34,7 @@ export type Card = {
   referencedBy: string[]
   inProd: boolean
   activity?: Activity
+  archived: boolean
   path: string
 }
 

@@ -1,8 +1,12 @@
 package board
 
 import (
+	"context"
+	"errors"
 	"reflect"
+	"slices"
 	"testing"
+	"time"
 
 	"fuda/internal/taskfiles"
 )
@@ -247,4 +251,129 @@ func TestLabelColorsAreDistinctWithinAGroupAndConfigurable(t *testing.T) {
 	if c["epic:three"] != "#123456" {
 		t.Errorf("configured color (theme folds into epic) wins, got %q", c["epic:three"])
 	}
+}
+
+func archived(id, done string, mods ...func(*taskfiles.Task)) taskfiles.Task {
+	t := task(id, "done", mods...)
+	t.Archived = true
+	t.Done = done
+	t.Path = "docs/board/archive/" + id + ".md"
+	return t
+}
+
+func TestDoneColumnHoldsTasksDoneWithinTheWindow(t *testing.T) {
+	today := time.Date(2026, 10, 28, 15, 0, 0, 0, time.Local)
+	b := Build(Inputs{Today: today, Develop: taskfiles.Result{
+		Tasks: []taskfiles.Task{task("A1", "backlog")},
+		Archived: []taskfiles.Task{
+			archived("A2", "2026-10-20", owners("Ana"), labels(taskfiles.Label{Group: "type", Value: "bug"})),
+			archived("A3", "2026-10-28"),
+			archived("A4", "2026-10-15"),
+			archived("A5", "2026-10-14"),
+			archived("A6", "not a date"),
+			archived("A7", "2026-10-29"),
+			archived("A8", ""),
+		},
+		Config: taskfiles.Config{Stages: []taskfiles.Stage{
+			{Name: "Done", WhenDone: true, Days: 14},
+			{Name: "Backlog", Statuses: []string{"backlog"}},
+		}},
+	}})
+
+	var ids []string
+	for _, c := range b.Cards {
+		if c.Column == "done" {
+			ids = append(ids, c.ID)
+			if !c.Archived {
+				t.Errorf("%s is not marked archived", c.ID)
+			}
+		}
+	}
+	if !reflect.DeepEqual(ids, []string{"A3", "A2", "A4"}) {
+		t.Errorf("done column %v, want newest first within 14 days", ids)
+	}
+	last := b.Columns[len(b.Columns)-1]
+	if last.ID != "done" || !last.Done || last.Days != 14 || len(last.Statuses) != 0 {
+		t.Errorf("done column must be last with no statuses, got %+v", b.Columns)
+	}
+	if !slices.Contains(b.Facets.Statuses, "done") || !slices.Contains(b.Facets.People, "Ana") {
+		t.Errorf("facets must cover done cards, got %+v", b.Facets)
+	}
+	if !slices.Contains(b.Facets.LabelGroups[0].Values, "bug") {
+		t.Errorf("label facets %+v", b.Facets.LabelGroups)
+	}
+}
+
+func TestNoDoneStageKeepsArchivedTasksOffTheBoard(t *testing.T) {
+	b := Build(Inputs{Today: time.Now(), Develop: taskfiles.Result{
+		Tasks:    []taskfiles.Task{task("A1", "backlog")},
+		Archived: []taskfiles.Task{archived("A2", time.Now().Format(time.DateOnly))},
+	}})
+	if len(b.Cards) != 1 || slices.ContainsFunc(b.Columns, func(c Column) bool { return c.Done }) {
+		t.Errorf("want only active cards and no done column, got %+v", b)
+	}
+}
+
+func TestDoneColumnFollowsTheDateWithoutNewCommits(t *testing.T) {
+	files := map[string][]byte{
+		"docs/board/stages.md":     []byte("---\nstages:\n  - name: Backlog\n    status: [backlog]\n  - name: Done\n    when: done\n    days: 2\n---\n"),
+		"docs/board/archive/A1.md": []byte("---\nid: A1\ntitle: t\nstatus: done\ndone: 2026-10-27\n---\n"),
+		"docs/board/tasks/A2.md":   []byte("---\nid: A2\ntitle: t\nstatus: backlog\n---\n"),
+	}
+	s := NewService(fakeSource{files}, Options{DocsRoot: "docs", BoardDir: "docs/board", WorkBranch: "develop", ProdBranch: "main"})
+	now := time.Date(2026, 10, 28, 23, 0, 0, 0, time.Local)
+	s.now = func() time.Time { return now }
+	doneCards := func() int {
+		if err := s.Sync(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		view, _ := s.Board()
+		return len(slices.DeleteFunc(slices.Clone(view.Cards), func(c Card) bool { return c.Column != "done" }))
+	}
+	if got := doneCards(); got != 1 {
+		t.Fatalf("want A1 in Done on day 2 of the window, got %d", got)
+	}
+	now = now.Add(2 * time.Hour)
+	if got := doneCards(); got != 0 {
+		t.Errorf("want A1 out of Done the next day, got %d", got)
+	}
+}
+
+func TestDoneColumnFollowsTheDateWhenOpenPRsFail(t *testing.T) {
+	files := map[string][]byte{
+		"docs/board/stages.md":     []byte("---\nstages:\n  - name: Backlog\n    status: [backlog]\n  - name: Done\n    when: done\n    days: 1\n---\n"),
+		"docs/board/repos.md":      []byte("---\ncode_repos: [acme/app]\n---\n"),
+		"docs/board/archive/A1.md": []byte("---\nid: A1\ntitle: t\nstatus: done\ndone: 2026-10-28\n---\n"),
+	}
+	source := &failingPRSource{fakeSource: fakeSource{files}}
+	s := NewService(source, Options{DocsRoot: "docs", BoardDir: "docs/board", WorkBranch: "develop", ProdBranch: "main"})
+	now := time.Date(2026, 10, 28, 12, 0, 0, 0, time.Local)
+	s.now = func() time.Time { return now }
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if view, _ := s.Board(); !slices.ContainsFunc(view.Cards, func(c Card) bool { return c.Column == "done" }) {
+		t.Fatal("want A1 in Done on its done day")
+	}
+	source.fail = true
+	now = now.AddDate(0, 0, 1)
+	if err := s.Sync(context.Background()); err == nil {
+		t.Fatal("want the open-PR error reported")
+	}
+	view, _ := s.Board()
+	if slices.ContainsFunc(view.Cards, func(c Card) bool { return c.Column == "done" }) {
+		t.Error("want A1 out of Done the next day even when open PRs fail")
+	}
+}
+
+type failingPRSource struct {
+	fakeSource
+	fail bool
+}
+
+func (f *failingPRSource) OpenPRs(context.Context, string) ([]PullRequest, error) {
+	if f.fail {
+		return nil, errors.New("host is down")
+	}
+	return nil, nil
 }

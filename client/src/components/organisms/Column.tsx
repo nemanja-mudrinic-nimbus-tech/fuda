@@ -5,13 +5,10 @@ import { StatusIcon } from '@/components/atoms/StatusIcon'
 import { TaskCard } from '@/components/molecules/TaskCard'
 import { Button } from '@/components/ui/button'
 import type { Card, Column as ColumnData } from '@/lib/api'
+import { columnStatus } from '@/lib/moves'
 import { cn } from '@/lib/utils'
 
 const pageSize = 25
-
-function columnStatus(column: ColumnData): string {
-  return column.prOpen ? 'in review' : (column.statuses[0] ?? '')
-}
 
 export function Column({
   column,

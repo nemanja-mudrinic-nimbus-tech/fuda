@@ -20,6 +20,7 @@ import {
   topSlices,
   within,
 } from '@/lib/insights'
+import { columnStatus } from '@/lib/moves'
 import { useArchive, useBoard } from '@/lib/queries'
 
 export const Route = createFileRoute('/insights')({
@@ -37,7 +38,7 @@ function InsightsPage() {
   const [today] = useState(() => new Date())
 
   const view = useMemo(() => {
-    const cards = data?.cards ?? []
+    const cards = (data?.cards ?? []).filter((c) => !c.archived)
     const period = periodOf(search, today)
     const inPeriod = (date: string) => within(period, date)
     const open = cards.filter(isOpen)
@@ -50,11 +51,13 @@ function InsightsPage() {
       open: open.length,
       inProgress: cards.filter((c) => c.status.trim().toLowerCase() === 'in progress').length,
       blocked: cards.filter((c) => c.blockedBy).length,
-      byStage: (data?.columns ?? []).map((col) => ({
-        key: col.name,
-        count: cards.filter((c) => c.column === col.id).length,
-        status: col.prOpen ? 'in review' : (col.statuses[0] ?? ''),
-      })),
+      byStage: (data?.columns ?? [])
+        .filter((col) => !col.done)
+        .map((col) => ({
+          key: col.name,
+          count: cards.filter((c) => c.column === col.id).length,
+          status: columnStatus(col),
+        })),
       byEpic: topSlices(countBy(open, labelsOf('epic'))),
       byType: topSlices(countBy(open, labelsOf('type'))),
       byOwner: topSlices(

@@ -51,6 +51,10 @@ In code: `taskfiles.Activity`, parsed by `taskfiles.SplitActivity`; `board.Card.
 The Stage a Task is in while an open pull request names it. The pull request, not the Status, puts it there.
 In code: `board/reviews.go`, `board.LinkedPR`.
 
+**Done column**:
+The optional last Stage, set by `when: done` in `stages.md`. It shows the archived Tasks whose `done` date is within the last `days` days (default 14), newest first. Its cards cannot be moved or assigned.
+In code: `taskfiles.Stage.WhenDone`, `board.Column.Done`, `board.Card.Archived`.
+
 **Read-only Board**:
 A Board the logged-in person cannot write to. It shows no drag handles and refuses Move and Assign.
 In code: `Service.CanWrite`, `TaskEditor.CanWrite`.
