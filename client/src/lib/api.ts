@@ -42,6 +42,7 @@ export type Activity = {
   result?: string
   usage?: string
   text: string
+  details?: string[]
 }
 
 export type OpenPr = { number: number; url: string }
