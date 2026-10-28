@@ -127,6 +127,7 @@ stages:
     when: pr-open
   - name: Testing
     status: [testing, in qa]
+    activity: true
 ---
 # Stages
 `),
@@ -154,7 +155,7 @@ people:
 	checkDeep(t, "stages", r.Config.Stages, []Stage{
 		{Name: "Backlog", Statuses: []string{"backlog"}},
 		{Name: "In review", WhenPROpen: true},
-		{Name: "Testing", Statuses: []string{"testing", "in qa"}},
+		{Name: "Testing", Statuses: []string{"testing", "in qa"}, Activity: true},
 	})
 	checkDeep(t, "label groups", r.Config.LabelGroups, []LabelGroup{
 		{Name: "type", Values: []string{"bug", "feat"}},

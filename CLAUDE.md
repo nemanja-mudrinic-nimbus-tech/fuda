@@ -35,6 +35,13 @@ token. One Go core serves the API and the embedded React app, as a web server an
   as the behaviour they describe. `docs/` states only what is true in the code; decided-but-unbuilt
   items go under TBD in `decisions.md`, with a proposal.
 
+## Tasks on fuda's board
+
+For each step an agent finishes on a task of fuda's board (`docs/board/tasks/`), it adds one line at
+the end of the task's `## Activity` section: `- <YYYY-MM-DD HH:MM> · <actor> · <event> · <result> ·
+<usage>` (usage optional). Only add lines; never change, reorder or delete existing ones. The Guide
+page "Agent guide" has the full rules.
+
 ## Personal overrides
 
 Optional and per developer: if `personal-agent.md` exists next to this file, read it and apply it on

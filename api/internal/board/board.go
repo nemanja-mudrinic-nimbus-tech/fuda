@@ -17,30 +17,32 @@ type Column struct {
 	Statuses []string `json:"statuses"`
 	PROpen   bool     `json:"prOpen"`
 	Unknown  bool     `json:"unknown"`
+	Activity bool     `json:"activity"`
 }
 
 type Card struct {
-	ID           string     `json:"id"`
-	Title        string     `json:"title"`
-	Status       string     `json:"status"`
-	Column       string     `json:"column"`
-	Owners       []string   `json:"owners"`
-	Testers      []string   `json:"testers"`
-	Labels       []string   `json:"labels"`
-	Prefix       string     `json:"prefix"`
-	Added        string     `json:"added"`
-	Claimed      string     `json:"claimed"`
-	Done         string     `json:"done,omitempty"`
-	PRs          []int      `json:"prs"`
-	PRRef        string     `json:"prRef,omitempty"`
-	OpenPRs      []LinkedPR `json:"openPrs"`
-	BlockedBy    string     `json:"blockedBy,omitempty"`
-	BlockedByIDs []string   `json:"blockedByIds"`
-	Blocks       []string   `json:"blocks"`
-	References   []string   `json:"references"`
-	ReferencedBy []string   `json:"referencedBy"`
-	InProd       bool       `json:"inProd"`
-	Path         string     `json:"path"`
+	ID           string              `json:"id"`
+	Title        string              `json:"title"`
+	Status       string              `json:"status"`
+	Column       string              `json:"column"`
+	Owners       []string            `json:"owners"`
+	Testers      []string            `json:"testers"`
+	Labels       []string            `json:"labels"`
+	Prefix       string              `json:"prefix"`
+	Added        string              `json:"added"`
+	Claimed      string              `json:"claimed"`
+	Done         string              `json:"done,omitempty"`
+	PRs          []int               `json:"prs"`
+	PRRef        string              `json:"prRef,omitempty"`
+	OpenPRs      []LinkedPR          `json:"openPrs"`
+	BlockedBy    string              `json:"blockedBy,omitempty"`
+	BlockedByIDs []string            `json:"blockedByIds"`
+	Blocks       []string            `json:"blocks"`
+	References   []string            `json:"references"`
+	ReferencedBy []string            `json:"referencedBy"`
+	InProd       bool                `json:"inProd"`
+	Activity     *taskfiles.Activity `json:"activity,omitempty"`
+	Path         string              `json:"path"`
 }
 
 type Facets struct {
@@ -81,11 +83,12 @@ func Build(in Inputs) Board {
 	for _, t := range tasks {
 		openPRs := in.OpenPRs[t.ID]
 		inProd := inProdStatuses[normalizeStatus(prodStatus[t.ID])]
+		column := columns.place(t.Status, len(openPRs) > 0)
 		cards = append(cards, Card{
 			ID:           t.ID,
 			Title:        t.Title,
 			Status:       t.Status,
-			Column:       columns.place(t.Status, len(openPRs) > 0),
+			Column:       column,
 			Owners:       people.canonical(t.Owners),
 			Testers:      people.canonical(t.Testers),
 			Labels:       labelStrings(t.Labels),
@@ -101,6 +104,7 @@ func Build(in Inputs) Board {
 			References:   refs.mentions[t.ID],
 			ReferencedBy: refs.mentionedBy[t.ID],
 			InProd:       inProd,
+			Activity:     columns.latestActivity(column, t.Activities),
 			Path:         t.Path,
 		})
 	}

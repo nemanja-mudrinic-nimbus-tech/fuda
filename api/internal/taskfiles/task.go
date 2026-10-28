@@ -56,6 +56,7 @@ func parseTask(p string, content []byte, archived bool) (Task, string) {
 	}
 
 	t := Task{Path: p, Body: string(body), Archived: archived}
+	_, t.Activities = SplitActivity(t.Body)
 	for _, f := range fields {
 		if err := t.set(f.key, f.value); err != nil {
 			return Task{}, fmt.Sprintf("field %q: %v", f.key, err)

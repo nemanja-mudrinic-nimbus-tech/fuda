@@ -53,6 +53,26 @@ are recommended:
 - `## Evidence`: what was checked, with dates and commit shas.
 - `## Group context`: once per label group, for background that many tasks share.
 - `## Answer`: on a question once it is answered.
+- `## Activity`: one line per event, added at the end. The task panel shows it as a timeline,
+  newest on top, instead of a list in the body.
+
+## Activity
+
+Each line of `## Activity` is one entry:
+
+```markdown
+## Activity
+
+- 2026-10-27 09:12 · factory · spec · READY · 12k tokens
+- 2026-10-27 10:40 · builder · build · PASS
+```
+
+The parts are `<YYYY-MM-DD HH:MM> · <actor> · <event> · <result> · <usage>`; the usage may be
+missing. The panel shows the time, the actor with an avatar, the event, the result as a badge and
+the usage. The badge is green for `PASS`, `READY`, `COMPLETE` and `auto_merge`, amber for
+`CHANGES`, `GAPS` and `needs_human`, red for `BLOCKED`, `FAILED` and `HIT`, and grey for any other
+result. A line in another form shows as an entry with its text only; it is never a Problem. A
+column with `activity: true` in `stages.md` shows the last line on its cards.
 
 Task ids written anywhere in a body become links, and the panel lists which tasks block or
 mention each other.

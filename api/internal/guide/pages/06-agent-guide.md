@@ -46,6 +46,15 @@ Retest, blocked, abandon, archive:
 - Abandon: status "backlog", clear owner and claimed, explain why under "## Evidence".
 - Never write status "done" except when moving a file to docs/board/archive/.
 
+Activity:
+- When you finish a step on a task (claim, spec, build, review, test, merge, block), add one line
+  at the end of its "## Activity" section; create the section at the end of the body if it is
+  missing. One line per step, in this form (the usage part is optional):
+  - 2026-10-27 10:40 · <your name> · <step> · <result> · <usage>
+  The time is YYYY-MM-DD HH:MM. The result is one word, for example PASS, READY, CHANGES,
+  BLOCKED or FAILED.
+- Only add lines. Never change, reorder or delete an existing Activity line.
+
 Commits that change task files touch only docs/board/ and use
 "chore(tasks): <add|claim|testing|validated|blocked|abandon|archive> <ID>".
 

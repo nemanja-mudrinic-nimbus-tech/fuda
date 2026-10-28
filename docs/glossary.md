@@ -43,6 +43,10 @@ In code: `board.Service.Assign`.
 A repository file fuda could not read. It is shown to people, never fatal.
 In code: `board.Problem`.
 
+**Activity entry**:
+One line of a Task's `## Activity` section: time, actor, event, result and an optional usage. A line in another form keeps only its text. The task panel shows all entries as a timeline; a Stage with `activity: true` shows the latest on its cards.
+In code: `taskfiles.Activity`, parsed by `taskfiles.SplitActivity`; `board.Card.Activity`, `board.TaskView.Activities`.
+
 **In review**:
 The Stage a Task is in while an open pull request names it. The pull request, not the Status, puts it there.
 In code: `board/reviews.go`, `board.LinkedPR`.

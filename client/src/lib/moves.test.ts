@@ -8,6 +8,7 @@ const column = (id: string, extra: Partial<Column> = {}): Column => ({
   statuses: [id.replace('-', ' ')],
   prOpen: false,
   unknown: false,
+  activity: false,
   ...extra,
 })
 
