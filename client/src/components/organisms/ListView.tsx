@@ -4,6 +4,7 @@ import { StatusIcon } from '@/components/atoms/StatusIcon'
 import { useBoardSearch } from '@/hooks/useBoardSearch'
 import type { Card, Column } from '@/lib/api'
 import { listOf } from '@/lib/filters'
+import { columnStatus } from '@/lib/moves'
 import { labelText } from '@/lib/labels'
 import { cn } from '@/lib/utils'
 
@@ -72,10 +73,7 @@ export function ListView({ columns, cards }: { columns: Column[]; cards: Card[] 
           return (
             <section key={column.id}>
               <h2 className="sticky top-0 z-10 flex h-9 items-center gap-2 border-b border-border/60 bg-muted/80 px-3 text-xs font-medium backdrop-blur">
-                <StatusIcon
-                  status={column.prOpen ? 'in review' : (column.statuses[0] ?? '')}
-                  className="size-3"
-                />
+                <StatusIcon status={columnStatus(column)} className="size-3" />
                 {column.name}
                 <span className="text-muted-foreground tabular-nums">{rows.length}</span>
               </h2>

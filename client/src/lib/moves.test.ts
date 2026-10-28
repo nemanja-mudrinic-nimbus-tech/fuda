@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { BoardData, Card, Column } from './api'
-import { applyPendingMoves, canDrag, canDrop, moveTargets } from './moves'
+import { applyPendingMoves, canDrag, canDrop, columnStatus, moveTargets } from './moves'
 
 const column = (id: string, extra: Partial<Column> = {}): Column => ({
   id,
   name: id,
   statuses: [id.replace('-', ' ')],
   prOpen: false,
+  done: false,
   unknown: false,
   activity: false,
   ...extra,
@@ -20,6 +21,7 @@ const board = {
     column('backlog'),
     column('in-progress'),
     column('in-review', { prOpen: true, statuses: [] }),
+    column('done', { done: true, statuses: [], days: 14 }),
   ],
   cards: [card('A-1'), card('A-2')],
 } as BoardData
@@ -50,6 +52,9 @@ describe('canDrag', () => {
   it('refuses every card on a read-only board', () => {
     expect(canDrag(card('A-1'), false, true)).toBe(false)
   })
+  it('refuses an archived card in the Done column', () => {
+    expect(canDrag(card('A-1', { archived: true, column: 'done' }), false, false)).toBe(false)
+  })
   it('allows a free card', () => {
     expect(canDrag(card('A-1'), false, false)).toBe(true)
   })
@@ -59,6 +64,9 @@ describe('canDrop', () => {
   it('refuses its own column and PR-derived columns', () => {
     expect(canDrop(card('A-1'), board.columns[0]!)).toBe(false)
     expect(canDrop(card('A-1'), board.columns[2]!)).toBe(false)
+  })
+  it('refuses the Done column', () => {
+    expect(canDrop(card('A-1'), board.columns[3]!)).toBe(false)
   })
   it('accepts another column', () => {
     expect(canDrop(card('A-1'), board.columns[1]!)).toBe(true)
@@ -74,5 +82,11 @@ describe('moveTargets', () => {
   it('lists nothing for a card that cannot be dragged', () => {
     expect(moveTargets(card('A-1'), board.columns, true, false)).toEqual([])
     expect(moveTargets(card('A-1'), board.columns, false, true)).toEqual([])
+  })
+})
+
+describe('columnStatus', () => {
+  it('names the status a column shows', () => {
+    expect(board.columns.map(columnStatus)).toEqual(['backlog', 'in progress', 'in review', 'done'])
   })
 })

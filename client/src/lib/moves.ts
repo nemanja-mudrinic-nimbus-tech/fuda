@@ -17,7 +17,13 @@ export function applyPendingMoves(board: BoardData, moves: PendingMove[]): Board
 }
 
 export function canDrag(card: Card, saving: boolean, readOnly: boolean): boolean {
-  return !readOnly && !saving && card.openPrs.length === 0
+  return !readOnly && !saving && !card.archived && card.openPrs.length === 0
+}
+
+export function columnStatus(column: Column): string {
+  if (column.prOpen) return 'in review'
+  if (column.done) return 'done'
+  return column.statuses[0] ?? ''
 }
 
 export function canDrop(card: Card, column: Column): boolean {

@@ -31,6 +31,7 @@ function card(id: string, overrides: Partial<Card> = {}): Card {
     references: [],
     referencedBy: [],
     inProd: false,
+    archived: false,
     path: `docs/board/tasks/${id}.md`,
     ...overrides,
   }
@@ -62,6 +63,20 @@ describe('filterCards', () => {
       'SS-3',
     ])
     expect(ids(filterCards(cards, { label: 'type:bug,area:api' }))).toEqual(['SS-2'])
+  })
+
+  it('filters cards in the Done column like any other card', () => {
+    const done = card('SS-9', {
+      status: 'done',
+      column: 'done',
+      archived: true,
+      owners: ['Ana'],
+      done: '2026-10-27',
+    })
+    const all = [...cards, done]
+    expect(ids(filterCards(all, { status: 'done' }))).toEqual(['SS-9'])
+    expect(ids(filterCards(all, { owner: 'Ana' }))).toContain('SS-9')
+    expect(ids(filterCards(all, { owner: 'Ben' }))).not.toContain('SS-9')
   })
 
   it('filters by status, owner, blocked and available', () => {
