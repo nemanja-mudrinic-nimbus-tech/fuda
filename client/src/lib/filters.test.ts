@@ -5,8 +5,10 @@ import {
   boardSearchSchema,
   countFacets,
   filterCards,
+  namesOnly,
   NO_OWNER,
   sortCards,
+  splitOwners,
   toggled,
 } from './filters'
 
@@ -131,6 +133,30 @@ describe('url state', () => {
 
   it('counts active filters', () => {
     expect(activeFilterCount({ status: 'a,b', blocked: true, sort: 'added', task: 'SS-1' })).toBe(3)
+  })
+})
+
+describe('owner pills', () => {
+  it('splits no owner from the names and says what each remove leaves', () => {
+    expect(splitOwners('none,Claude,Ana')).toEqual({
+      noOwner: true,
+      names: ['Claude', 'Ana'],
+      withoutNames: 'none',
+      withoutNoOwner: 'Claude,Ana',
+    })
+    expect(splitOwners('none')).toMatchObject({ withoutNames: 'none', withoutNoOwner: undefined })
+    expect(splitOwners('Claude')).toMatchObject({ noOwner: false, withoutNames: undefined })
+  })
+
+  it('keeps only the names in the owner names pill', () => {
+    const group = {
+      values: [{ value: NO_OWNER }, { value: 'Claude' }, { value: 'Ana' }],
+      selected: [NO_OWNER, 'Claude'],
+    }
+    expect(namesOnly(group)).toEqual({
+      values: [{ value: 'Claude' }, { value: 'Ana' }],
+      selected: ['Claude'],
+    })
   })
 })
 

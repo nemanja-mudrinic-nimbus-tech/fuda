@@ -37,6 +37,28 @@ export function toggled(value: string | undefined, item: string): string | undef
   return next.length ? next.join(',') : undefined
 }
 
+export function splitOwners(owner: string | undefined) {
+  const list = listOf(owner)
+  const names = list.filter((o) => o !== NO_OWNER)
+  const noOwner = list.includes(NO_OWNER)
+  return {
+    noOwner,
+    names,
+    withoutNames: noOwner ? NO_OWNER : undefined,
+    withoutNoOwner: names.join(',') || undefined,
+  }
+}
+
+export function namesOnly<G extends { values: { value: string }[]; selected: string[] }>(
+  group: G,
+): G {
+  return {
+    ...group,
+    values: group.values.filter((v) => v.value !== NO_OWNER),
+    selected: group.selected.filter((v) => v !== NO_OWNER),
+  }
+}
+
 export function isAvailable(card: Card): boolean {
   return (
     card.status.trim().toLowerCase() === 'backlog' && card.owners.length === 0 && !card.blockedBy

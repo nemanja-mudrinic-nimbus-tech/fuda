@@ -3,7 +3,7 @@ import { FilterPill, PillShell } from '@/components/molecules/FilterPill'
 import { Button } from '@/components/ui/button'
 import { useBoardSearch } from '@/hooks/useBoardSearch'
 import type { FilterGroup } from '@/hooks/useFilterGroups'
-import { listOf, NO_OWNER } from '@/lib/filters'
+import { namesOnly, splitOwners } from '@/lib/filters'
 
 function day(value?: string): string {
   return value ? format(parseISO(value), 'd MMM') : '…'
@@ -17,20 +17,15 @@ function FlagPill({ label, onRemove }: { label: string; onRemove: () => void }) 
   )
 }
 
-function ownerNames(group: FilterGroup, clearNames: () => void): FilterGroup {
-  return {
-    ...group,
-    selected: group.selected.filter((v) => v !== NO_OWNER),
-    clear: clearNames,
-  }
-}
-
 export function ActiveFilters({ groups }: { groups: FilterGroup[] }) {
-  const { search, update, toggle, clear } = useBoardSearch()
-  const noOwner = listOf(search.owner).includes(NO_OWNER)
+  const { search, update, clear } = useBoardSearch()
+  const owners = splitOwners(search.owner)
+  const { noOwner } = owners
   const active = groups
     .map((g) =>
-      g.id === 'owner' && noOwner ? ownerNames(g, () => update({ owner: NO_OWNER })) : g,
+      g.id === 'owner' && noOwner
+        ? { ...namesOnly(g), clear: () => update({ owner: owners.withoutNames }) }
+        : g,
     )
     .filter((g) => g.selected.length > 0)
   const dated = Boolean(search.from || search.to)
@@ -49,7 +44,9 @@ export function ActiveFilters({ groups }: { groups: FilterGroup[] }) {
       {active.map((g) => (
         <FilterPill key={g.id} group={g} />
       ))}
-      {noOwner && <FlagPill label="No owner" onRemove={() => toggle('owner', NO_OWNER)} />}
+      {noOwner && (
+        <FlagPill label="No owner" onRemove={() => update({ owner: owners.withoutNoOwner })} />
+      )}
       {dated && (
         <FlagPill
           label={`Added ${day(search.from)} – ${day(search.to)}`}

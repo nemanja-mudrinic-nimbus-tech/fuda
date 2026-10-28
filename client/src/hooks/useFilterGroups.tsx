@@ -46,7 +46,7 @@ function noOwner(count: number): FilterValue {
     count,
     label: (
       <span className="inline-flex items-center gap-2">
-        <UserRound className="size-4.5 shrink-0 rounded-full border border-dashed border-muted-foreground/60 p-0.5 text-muted-foreground" />
+        <UserRound className="size-5 shrink-0 rounded-full border border-dashed border-muted-foreground/60 p-0.5 text-muted-foreground" />
         No owner
       </span>
     ),
