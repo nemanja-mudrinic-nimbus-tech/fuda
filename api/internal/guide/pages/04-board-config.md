@@ -62,7 +62,7 @@ people:
 
 The owner and tester filters list only these names, and aliases fold "Nemanja" into "Nemanja
 Mudrinic". Without the file, people come from the names used in tasks, and a unique first name is
-matched to the full name.
+matched to the full name. The owner filter also offers "No owner" for the cards that have no owner.
 
 ## repos.md: code repositories for In review
 

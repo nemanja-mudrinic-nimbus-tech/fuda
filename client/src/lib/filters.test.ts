@@ -5,6 +5,7 @@ import {
   boardSearchSchema,
   countFacets,
   filterCards,
+  NO_OWNER,
   sortCards,
   toggled,
 } from './filters'
@@ -68,6 +69,35 @@ describe('filterCards', () => {
     expect(ids(filterCards(cards, { available: true }))).toEqual(['SS-10'])
   })
 
+  describe('no owner', () => {
+    const board = [...cards, card('SS-4', { status: 'in progress', labels: ['type:bug'] })]
+
+    it('matches only cards without an owner, in every status', () => {
+      expect(ids(filterCards(board, { owner: NO_OWNER }))).toEqual(['SS-10', 'SS-4'])
+    })
+
+    it('adds the cards of the named owners', () => {
+      expect(ids(filterCards(board, { owner: `${NO_OWNER},Ana` }))).toEqual([
+        'SS-2',
+        'SS-10',
+        'SS-4',
+      ])
+    })
+
+    it('narrows together with status and label filters', () => {
+      expect(ids(filterCards(board, { owner: NO_OWNER, status: 'in progress' }))).toEqual(['SS-4'])
+      expect(ids(filterCards(board, { owner: `${NO_OWNER},Ben`, label: 'type:bug' }))).toEqual([
+        'SS-3',
+        'SS-4',
+      ])
+    })
+
+    it('never matches a card with owners', () => {
+      const owned = [card('SS-5', { owners: ['Ana', 'Ben'] })]
+      expect(filterCards(owned, { owner: NO_OWNER })).toEqual([])
+    })
+  })
+
   it('filters by added range, skipping tasks without a date', () => {
     expect(ids(filterCards(cards, { from: '2026-09-21', to: '2026-09-30' }))).toEqual(['SS-3'])
     expect(ids(filterCards([...cards, card('SS-9')], { from: '2026-01-01' }))).toHaveLength(3)
@@ -92,6 +122,11 @@ describe('url state', () => {
     expect(toggled('merged', 'testing')).toBe('merged,testing')
     expect(toggled('merged,testing', 'merged')).toBe('testing')
     expect(toggled('merged', 'merged')).toBeUndefined()
+    expect(toggled(`${NO_OWNER},Claude`, NO_OWNER)).toBe('Claude')
+  })
+
+  it('keeps the no owner token in the owner list', () => {
+    expect(boardSearchSchema.parse({ owner: 'none,Claude' })).toEqual({ owner: 'none,Claude' })
   })
 
   it('counts active filters', () => {
@@ -112,5 +147,9 @@ describe('countFacets', () => {
     expect(counts.label.get('type:bug')).toBe(2)
     expect(counts.owner.get('Ana')).toBe(1)
     expect(counts.status.get('backlog')).toBe(2)
+  })
+
+  it('counts cards without an owner under no owner', () => {
+    expect(countFacets(cards).owner.get(NO_OWNER)).toBe(1)
   })
 })
