@@ -15,7 +15,7 @@ func activities(entries ...taskfiles.Activity) func(*taskfiles.Task) {
 
 func TestCardShowsTheLatestActivityOnlyInAnActivityColumn(t *testing.T) {
 	first := taskfiles.Activity{Text: "first"}
-	latest := taskfiles.Activity{When: "2026-10-27 10:40", Actor: "builder", Event: "build", Result: "PASS", Text: "latest"}
+	latest := taskfiles.Activity{When: "2026-10-27 10:40", Actor: "builder", Event: "build", Result: "PASS", Text: "latest", Details: []string{"a finding"}}
 	b := Build(Inputs{Develop: taskfiles.Result{
 		Tasks: []taskfiles.Task{
 			task("A1", "in progress", activities(first, latest)),
@@ -28,8 +28,10 @@ func TestCardShowsTheLatestActivityOnlyInAnActivityColumn(t *testing.T) {
 		}},
 	}})
 
-	if got := card(b, "A1").Activity; got == nil || *got != latest {
-		t.Errorf("A1 activity: got %+v, want the latest entry", got)
+	onCard := latest
+	onCard.Details = nil
+	if got := card(b, "A1").Activity; got == nil || !reflect.DeepEqual(*got, onCard) {
+		t.Errorf("A1 activity: got %+v, want the latest entry without its details", got)
 	}
 	if got := card(b, "A2").Activity; got != nil {
 		t.Errorf("a column without activity: true shows no entry, got %+v", got)

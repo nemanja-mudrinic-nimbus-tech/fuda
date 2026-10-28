@@ -15,7 +15,9 @@ func TestSplitActivity(t *testing.T) {
 	check(t, "rest", rest, "# A1\n\n## Done when\nit is.\n\n## Notes\nstays in the body.\n")
 	checkDeep(t, "entries", entries, []Activity{
 		{When: "2026-10-27 09:12", Actor: "factory", Event: "spec", Result: "READY", Usage: "12k tokens", Text: "2026-10-27 09:12 · factory · spec · READY · 12k tokens"},
-		{When: "2026-10-27 10:40", Actor: "builder", Event: "build", Result: "PASS", Text: "2026-10-27 10:40 · builder · build · PASS"},
+		{When: "2026-10-27 10:40", Actor: "builder", Event: "build", Result: "PASS", Text: "2026-10-27 10:40 · builder · build · PASS",
+			Details: []string{"next: code review", "~/runs/F-8/evidence.md", "https://example.com/pr/5"}},
+		{Text: "one space is not a detail"},
 		{Text: "2026-10-27 11:00 · reviewer · code review · CHANGES · 3 findings · extra"},
 		{Text: "the reviewer asked for a second look"},
 		{Text: "2026-10-27 · nobody · no time · PASS"},

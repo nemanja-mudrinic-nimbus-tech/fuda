@@ -50,8 +50,8 @@ function Ids({ ids }: { ids: string[] }) {
 
 export function TaskSheet({ taskIds, prLink }: { taskIds: string[]; prLink?: string }) {
   const { search, toggle, openTask } = useBoardSearch()
-  const { data: task, isError } = useTask(search.task)
-  const { data: board } = useBoard()
+  const { data: task, isError, dataUpdatedAt: taskUpdatedAt } = useTask(search.task)
+  const { data: board, dataUpdatedAt: boardUpdatedAt } = useBoard()
   const assign = useAssign()
   const move = useMove()
   const movePending = usePendingMoves().some((m) => m.cardId === search.task)
@@ -191,7 +191,10 @@ export function TaskSheet({ taskIds, prLink }: { taskIds: string[]; prLink?: str
               lead="Done when"
               dropTitle
             />
-            <ActivityTimeline entries={task.activities} />
+            <ActivityTimeline
+              entries={task.activities}
+              now={Math.max(boardUpdatedAt, taskUpdatedAt)}
+            />
             <p className="font-mono text-[11px] text-muted-foreground">{task.path}</p>
           </div>
         )}
