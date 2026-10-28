@@ -64,6 +64,7 @@ func (c *columns) latestActivity(column string, entries []taskfiles.Activity) *t
 		return nil
 	}
 	latest := entries[len(entries)-1]
+	latest.Details = nil
 	return &latest
 }
 

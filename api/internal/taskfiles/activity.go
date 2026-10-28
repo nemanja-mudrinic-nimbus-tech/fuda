@@ -7,17 +7,20 @@ import (
 )
 
 type Activity struct {
-	When   string `json:"when,omitempty"`
-	Actor  string `json:"actor,omitempty"`
-	Event  string `json:"event,omitempty"`
-	Result string `json:"result,omitempty"`
-	Usage  string `json:"usage,omitempty"`
-	Text   string `json:"text"`
+	When    string   `json:"when,omitempty"`
+	Actor   string   `json:"actor,omitempty"`
+	Event   string   `json:"event,omitempty"`
+	Result  string   `json:"result,omitempty"`
+	Usage   string   `json:"usage,omitempty"`
+	Text    string   `json:"text"`
+	Details []string `json:"details,omitempty"`
 }
 
 const activityHeading = "## activity"
 
 var bullet = regexp.MustCompile(`^[-*+](\s|$)`)
+
+var detailLine = regexp.MustCompile(`^(?: {2,}|\t)[-*+]\s+(.*\S)`)
 
 var activityTime = regexp.MustCompile(`^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$`)
 
@@ -28,6 +31,13 @@ func SplitActivity(body string) (rest string, entries []Activity) {
 		return body, nil
 	}
 	for _, line := range lines[start+1 : end] {
+		if detail := detailLine.FindStringSubmatch(line); detail != nil {
+			if len(entries) > 0 {
+				last := &entries[len(entries)-1]
+				last.Details = append(last.Details, detail[1])
+			}
+			continue
+		}
 		if entry, ok := parseActivity(line); ok {
 			entries = append(entries, entry)
 		}
