@@ -73,9 +73,10 @@ func decodeConfig(content []byte, decode func(map[string]*yaml.Node) error) erro
 }
 
 type stageEntry struct {
-	Name   string   `yaml:"name"`
-	Status []string `yaml:"status"`
-	When   string   `yaml:"when"`
+	Name     string   `yaml:"name"`
+	Status   []string `yaml:"status"`
+	When     string   `yaml:"when"`
+	Activity bool     `yaml:"activity"`
 }
 
 func decodeStages(n *yaml.Node, dst *[]Stage) error {
@@ -100,7 +101,7 @@ func decodeStages(n *yaml.Node, dst *[]Stage) error {
 		if len(e.Status) == 0 && e.When == "" {
 			return fmt.Errorf("stages: %q needs a status list or when: pr-open", e.Name)
 		}
-		stages = append(stages, Stage{Name: e.Name, Statuses: e.Status, WhenPROpen: e.When == "pr-open"})
+		stages = append(stages, Stage{Name: e.Name, Statuses: e.Status, WhenPROpen: e.When == "pr-open", Activity: e.Activity})
 	}
 	*dst = stages
 	return nil

@@ -19,16 +19,20 @@ type columns struct {
 	list     []Column
 	byStatus map[string]string
 	review   string
+	activity map[string]bool
 }
 
 func buildColumns(stages []taskfiles.Stage, tasks []taskfiles.Task) *columns {
 	if stages == nil {
 		stages = defaultStages
 	}
-	c := &columns{byStatus: map[string]string{}}
+	c := &columns{byStatus: map[string]string{}, activity: map[string]bool{}}
 	for _, s := range stages {
-		col := Column{ID: slug(s.Name), Name: s.Name, Statuses: orEmpty(s.Statuses), PROpen: s.WhenPROpen}
+		col := Column{ID: slug(s.Name), Name: s.Name, Statuses: orEmpty(s.Statuses), PROpen: s.WhenPROpen, Activity: s.Activity}
 		c.list = append(c.list, col)
+		if s.Activity {
+			c.activity[col.ID] = true
+		}
 		for _, status := range s.Statuses {
 			c.byStatus[normalizeStatus(status)] = col.ID
 		}
@@ -53,6 +57,14 @@ func (c *columns) place(status string, prOpen bool) string {
 		return c.review
 	}
 	return c.byStatus[normalizeStatus(status)]
+}
+
+func (c *columns) latestActivity(column string, entries []taskfiles.Activity) *taskfiles.Activity {
+	if !c.activity[column] || len(entries) == 0 {
+		return nil
+	}
+	latest := entries[len(entries)-1]
+	return &latest
 }
 
 func normalizeStatus(s string) string {
