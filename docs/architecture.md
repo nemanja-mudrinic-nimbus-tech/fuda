@@ -231,7 +231,9 @@ flowchart TD
 ### Facets (what the filters offer)
 
 - **People:** from `people.md` (names + aliases) when present; otherwise every owner and tester,
-  matched case-insensitively, with a unique first name folded into the full name.
+  matched case-insensitively, with a unique first name folded into the full name. The Owner facet
+  starts with "No owner" (`none` in the `owner` URL list): it matches cards with an empty `owner`,
+  any-of with the named owners. `none` is reserved, so a person named "none" is not supported.
 - **Labels:** `group:value`. `theme` reads as `epic`; a bare value goes to the `label` group. From
   `labels.md` when present (only listed values are offered), otherwise from the tasks, with
   default `type` values added.

@@ -1,9 +1,10 @@
+import { UserRound } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Avatar } from '@/components/atoms/PersonChip'
 import { StatusIcon } from '@/components/atoms/StatusIcon'
 import { useBoardSearch } from '@/hooks/useBoardSearch'
 import type { Card, Column, Facets } from '@/lib/api'
-import { countFacets, listOf } from '@/lib/filters'
+import { countFacets, listOf, NO_OWNER } from '@/lib/filters'
 
 export type FilterValue = { value: string; label: ReactNode; text: string; count: number }
 
@@ -36,6 +37,20 @@ function person(name: string): ReactNode {
       {name}
     </span>
   )
+}
+
+function noOwner(count: number): FilterValue {
+  return {
+    value: NO_OWNER,
+    text: 'No owner',
+    count,
+    label: (
+      <span className="inline-flex items-center gap-2">
+        <UserRound className="size-5 shrink-0 rounded-full border border-dashed border-muted-foreground/60 p-0.5 text-muted-foreground" />
+        No owner
+      </span>
+    ),
+  }
 }
 
 export function useFilterGroups(facets: Facets, columns: Column[], cards: Card[]): FilterGroup[] {
@@ -76,16 +91,20 @@ export function useFilterGroups(facets: Facets, columns: Column[], cards: Card[]
     title: string,
     plural: string,
     names: string[],
+    leading: FilterValue[] = [],
   ): FilterGroup => ({
     id: key,
     title,
     plural,
-    values: names.map((n) => ({
-      value: n,
-      text: n,
-      label: person(n),
-      count: counts[key].get(n) ?? 0,
-    })),
+    values: [
+      ...leading,
+      ...names.map((n) => ({
+        value: n,
+        text: n,
+        label: person(n),
+        count: counts[key].get(n) ?? 0,
+      })),
+    ],
     selected: listOf(search[key]),
     toggle: (v) => toggle(key, v),
     clear: () => update({ [key]: undefined }),
@@ -95,7 +114,7 @@ export function useFilterGroups(facets: Facets, columns: Column[], cards: Card[]
 
   const groups: FilterGroup[] = [
     ...labelGroups.filter((g) => g.id === 'label:type' || g.id === 'label:epic'),
-    people('owner', 'Owner', 'owners', facets.people),
+    people('owner', 'Owner', 'owners', facets.people, [noOwner(counts.owner.get(NO_OWNER) ?? 0)]),
     ...labelGroups.filter((g) => g.id !== 'label:type' && g.id !== 'label:epic'),
     people('tester', 'Tester', 'testers', facets.testers),
     {

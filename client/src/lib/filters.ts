@@ -23,6 +23,8 @@ export const boardSearchSchema = z.object({
 
 export type BoardSearch = z.infer<typeof boardSearchSchema>
 
+export const NO_OWNER = 'none'
+
 export type ListKey = 'status' | 'owner' | 'tester' | 'label' | 'prefix'
 
 export function listOf(value: string | undefined): string[] {
@@ -35,6 +37,28 @@ export function toggled(value: string | undefined, item: string): string | undef
   return next.length ? next.join(',') : undefined
 }
 
+export function splitOwners(owner: string | undefined) {
+  const list = listOf(owner)
+  const names = list.filter((o) => o !== NO_OWNER)
+  const noOwner = list.includes(NO_OWNER)
+  return {
+    noOwner,
+    names,
+    withoutNames: noOwner ? NO_OWNER : undefined,
+    withoutNoOwner: names.join(',') || undefined,
+  }
+}
+
+export function namesOnly<G extends { values: { value: string }[]; selected: string[] }>(
+  group: G,
+): G {
+  return {
+    ...group,
+    values: group.values.filter((v) => v.value !== NO_OWNER),
+    selected: group.selected.filter((v) => v !== NO_OWNER),
+  }
+}
+
 export function isAvailable(card: Card): boolean {
   return (
     card.status.trim().toLowerCase() === 'backlog' && card.owners.length === 0 && !card.blockedBy
@@ -43,6 +67,10 @@ export function isAvailable(card: Card): boolean {
 
 function anyOf(selected: string[], values: string[]): boolean {
   return selected.length === 0 || selected.some((s) => values.includes(s))
+}
+
+function ownersMatch(selected: string[], owners: string[]): boolean {
+  return anyOf(selected, owners) || (owners.length === 0 && selected.includes(NO_OWNER))
 }
 
 function labelsMatch(selected: string[], labels: string[]): boolean {
@@ -72,7 +100,7 @@ export function filterCards(cards: Card[], search: BoardSearch, textMatches?: st
   return cards.filter(
     (card) =>
       anyOf(statuses, [card.status]) &&
-      anyOf(owners, card.owners) &&
+      ownersMatch(owners, card.owners) &&
       anyOf(testers, card.testers) &&
       anyOf(prefixes, [card.prefix]) &&
       labelsMatch(labels, card.labels) &&
@@ -126,6 +154,7 @@ export function countFacets(cards: Card[]): FacetCounts {
     add(counts.status, card.status)
     add(counts.prefix, card.prefix)
     card.owners.forEach((o) => add(counts.owner, o))
+    if (card.owners.length === 0) add(counts.owner, NO_OWNER)
     card.testers.forEach((t) => add(counts.tester, t))
     card.labels.forEach((l) => add(counts.label, l))
   }
