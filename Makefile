@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 ENV := set -a; [ -f .env ] && . ./.env; set +a;
 
-.PHONY: dev dev-api dev-client check check-api check-client fmt build client docker desktop desktop-macos desktop-windows clean
+.PHONY: dev dev-api dev-client check check-api check-client fmt build client docker desktop desktop-macos desktop-macos-dmg desktop-windows clean
 
 VERSION ?= dev
 GITHUB_CLIENT_ID ?=
@@ -52,6 +52,15 @@ desktop-macos: client
 	mkdir -p bin/fuda.app/Contents/Resources
 	cp api/cmd/fuda-desktop/icon.icns bin/fuda.app/Contents/Resources/icon.icns
 	sed 's/@VERSION@/$(VERSION)/' api/cmd/fuda-desktop/Info.plist > bin/fuda.app/Contents/Info.plist
+	codesign --force --sign - --identifier io.nimbus-tech.fuda bin/fuda.app
+
+desktop-macos-dmg: desktop-macos
+	rm -rf bin/dmg-staging bin/fuda-desktop_darwin_$(ARCH).dmg
+	mkdir bin/dmg-staging
+	cp -R bin/fuda.app bin/dmg-staging/fuda.app
+	ln -s /Applications bin/dmg-staging/Applications
+	hdiutil create -volname fuda -format UDZO -srcfolder bin/dmg-staging bin/fuda-desktop_darwin_$(ARCH).dmg
+	rm -rf bin/dmg-staging
 
 desktop-windows: client
 	$(DESKTOP_IDS) \

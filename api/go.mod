@@ -3,6 +3,7 @@ module fuda
 go 1.27.1
 
 require (
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/creativeprojects/go-selfupdate v1.6.0
 	github.com/wailsapp/wails/v3 v3.0.0-beta.28
@@ -15,7 +16,6 @@ require (
 require (
 	code.gitea.io/sdk/gitea v0.23.2 // indirect
 	github.com/42wim/httpsig v1.2.4 // indirect
-	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/danieljoos/wincred v1.2.3 // indirect

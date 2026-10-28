@@ -98,7 +98,9 @@ with a proposal.
   ones. Remove features that don't work rather than leave them half-wired.
 - **Tests where the logic is.** Unit tests for parsing and rules, one HTTP smoke test, no mocking
   framework, no end-to-end suite. Small fixtures in `testdata/`.
-- **The Makefile uses only `go`, `pnpm` and `docker`,** so anyone can clone and run it.
+- **The Makefile uses only `go`, `pnpm` and `docker`,** so anyone can clone and run it. The macOS
+  targets also use `codesign` and `hdiutil`, which ship with macOS and the Xcode Command Line Tools
+  (cgo needs them anyway).
 - **Docs change with the code.** README, Guide pages and these docs are updated in the same PR as
   the behaviour they describe.
 
@@ -155,7 +157,9 @@ updates [architecture.md](architecture.md).
 
 ### Signing and notarizing the macOS app
 
-- **Settled:** `fuda.app` ships unsigned. People right-click, Open the first time.
+- **Settled:** `fuda.app` is ad-hoc signed (`codesign --sign -`) and ships in a DMG. Ad-hoc signing
+  makes the bundle valid, so macOS shows the "unverified developer" prompt instead of "damaged". People
+  open it once from System Settings → Privacy & Security → Open Anyway.
 - **Open:** whether to pay for an Apple Developer account.
 - **Proposal:** Sign `fuda.app` with a Developer ID certificate and notarize it in the `release`
   workflow (`codesign`, `xcrun notarytool`, `stapler`), with the certificate and App Store Connect

@@ -22,7 +22,8 @@ make dev                  # API on :8080 and the app on http://localhost:5173
 | `make fmt` | Formats Go and client code. |
 | `make build` | Builds the client into `api/internal/web/dist`, then the binary `bin/fuda`. |
 | `make docker` | Builds the image (`fuda`). |
-| `make desktop-macos` | The desktop app for macOS as the bundle `bin/fuda.app`. Needs a Mac with Xcode command line tools. `ARCH=amd64` for Intel. Needs the GitHub App values (see "GitHub App locally"). |
+| `make desktop-macos` | The desktop app for macOS as the ad-hoc-signed bundle `bin/fuda.app`. Needs a Mac with Xcode command line tools. `ARCH=amd64` for Intel. Needs the GitHub App values (see "GitHub App locally"). |
+| `make desktop-macos-dmg` | `make desktop-macos`, then the disk image `bin/fuda-desktop_darwin_<arch>.dmg` with `fuda.app` and an Applications link. This is what the release uploads. |
 | `make desktop-windows` | The desktop app for Windows in `bin/fuda-desktop.exe`. Cross-builds from any host. |
 | `make clean` | Removes build output and the local cache. |
 
@@ -192,7 +193,8 @@ use fuda on their repository, not for people changing fuda.
   and a dynamic import (see `WorkspacePicker.test.tsx`).
 - **Client:** shadcn components (`components/ui` is generated, don't edit it), Tailwind tokens from
   `index.css`, every view state in the URL.
-- **The Makefile uses only `go`, `pnpm` and `docker`.**
+- **The Makefile uses only `go`, `pnpm` and `docker`.** The macOS targets also use `codesign` and
+  `hdiutil`, which ship with macOS and the Xcode Command Line Tools.
 
 ## Pull requests
 

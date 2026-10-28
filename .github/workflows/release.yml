@@ -21,8 +21,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - { runner: macos-latest, target: desktop-macos, os: darwin, arch: arm64 }
-          - { runner: macos-latest, target: desktop-macos, os: darwin, arch: amd64 }
+          - { runner: macos-latest, target: desktop-macos-dmg, os: darwin, arch: arm64 }
+          - { runner: macos-latest, target: desktop-macos-dmg, os: darwin, arch: amd64 }
           - { runner: windows-latest, target: desktop-windows, os: windows, arch: amd64 }
     runs-on: ${{ matrix.runner }}
     steps:
@@ -51,7 +51,6 @@ jobs:
             7z a "$name.zip" fuda-desktop.exe
             asset="$name.zip"
           else
-            tar -czf "$name.tar.gz" fuda.app
-            asset="$name.tar.gz"
+            asset="$name.dmg"
           fi
           gh release upload "$GITHUB_REF_NAME" "$asset" --clobber
