@@ -65,14 +65,28 @@ Each line of `## Activity` is one entry:
 
 - 2026-10-27 09:12 · factory · spec · READY · 12k tokens
 - 2026-10-27 10:40 · builder · build · PASS
+- 2026-10-27 11:05 · reviewer · code review · VERDICT: CHANGES
+  - The Move handler does not check the token.
+  - next: build fixes the finding
+  - ~/runs/A1/review.md
 ```
 
 The parts are `<YYYY-MM-DD HH:MM> · <actor> · <event> · <result> · <usage>`; the usage may be
-missing. The panel shows the time, the actor with an avatar, the event, the result as a badge and
-the usage. The badge is green for `PASS`, `READY`, `COMPLETE` and `auto_merge`, amber for
-`CHANGES`, `GAPS` and `needs_human`, red for `BLOCKED`, `FAILED` and `HIT`, and grey for any other
-result. A line in another form shows as an entry with its text only; it is never a Problem. A
-column with `activity: true` in `stages.md` shows the last line on its cards.
+missing. The panel shows each entry as a row: the actor with an avatar, the event, the result as a
+badge, the time relative to now ("just now", "12 min ago", "3 h ago", "yesterday", then the date)
+with the full time on hover, and the usage at the end. The badge shows only the result word: for
+`WORD: VALUE` it shows the value (`VERDICT: PASS` shows `PASS`), otherwise the whole result. The
+badge is green for `PASS`, `READY`, `COMPLETE` and `auto_merge`, amber for `CHANGES`, `GAPS` and
+`needs_human`, red for `BLOCKED`, `FAILED` and `HIT`, and grey for any other result. A line in
+another form shows as an entry with its text only; it is never a Problem.
+
+Lines indented under an entry (two spaces, then `- `) are its detail lines: findings, what happens
+next, evidence or a failure reason. They are never entries of their own. The panel shows them under
+the row, the first 3 and a "show N more" control for the rest. A detail line that starts with `~/`
+or `/` shows with a copy button; a URL shows as a link.
+
+A column with `activity: true` in `stages.md` shows the last entry on its cards as
+`<actor> · <event>` with the result badge, without detail lines.
 
 Task ids written anywhere in a body become links, and the panel lists which tasks block or
 mention each other.
