@@ -173,12 +173,12 @@ func TestParseDoneStage(t *testing.T) {
 		want     int
 		problems int
 	}{
-		{"default window", "", DefaultDoneDays, 0},
+		{"default window", "", defaultDoneDays, 0},
 		{"set window", "\n    days: 7", 7, 0},
-		{"zero days", "\n    days: 0", DefaultDoneDays, 1},
-		{"text days", "\n    days: soon", DefaultDoneDays, 1},
-		{"fraction days", "\n    days: 1.5", DefaultDoneDays, 1},
-		{"list days", "\n    days: [3]", DefaultDoneDays, 1},
+		{"zero days", "\n    days: 0", defaultDoneDays, 1},
+		{"text days", "\n    days: soon", defaultDoneDays, 1},
+		{"fraction days", "\n    days: 1.5", defaultDoneDays, 1},
+		{"list days", "\n    days: [3]", defaultDoneDays, 1},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -196,6 +196,15 @@ func TestParseDoneStage(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestParseSecondDoneStageIsAProblem(t *testing.T) {
+	content := "---\nstages:\n  - name: Done\n    when: done\n  - name: Shipped\n    when: done\n    days: 3\n---\n"
+	r := Parse(map[string][]byte{"docs/board/stages.md": []byte(content)}, layout)
+	if len(r.Problems) != 1 || !strings.Contains(r.Problems[0].Reason, "Shipped") {
+		t.Fatalf("want one problem about Shipped, got %+v", r.Problems)
+	}
+	checkDeep(t, "stages", r.Config.Stages, []Stage{{Name: "Done", WhenDone: true, Days: defaultDoneDays}})
 }
 
 func TestParseDoneStageWithStatusIsIgnored(t *testing.T) {

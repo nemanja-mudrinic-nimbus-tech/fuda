@@ -28,14 +28,13 @@ func buildColumns(stages []taskfiles.Stage, tasks []taskfiles.Task) *columns {
 		stages = defaultStages
 	}
 	c := &columns{byStatus: map[string]string{}, activity: map[string]bool{}}
-	var doneColumns []Column
 	for _, s := range stages {
 		col := Column{ID: slug(s.Name), Name: s.Name, Statuses: orEmpty(s.Statuses), PROpen: s.WhenPROpen, Done: s.WhenDone, Days: s.Days, Activity: s.Activity}
 		if s.Activity {
 			c.activity[col.ID] = true
 		}
 		if s.WhenDone {
-			doneColumns = append(doneColumns, col)
+			c.done = &col
 			continue
 		}
 		c.list = append(c.list, col)
@@ -55,9 +54,8 @@ func buildColumns(stages []taskfiles.Stage, tasks []taskfiles.Task) *columns {
 		c.list = append(c.list, col)
 		c.byStatus[status] = col.ID
 	}
-	c.list = append(c.list, doneColumns...)
-	if len(doneColumns) > 0 {
-		c.done = &doneColumns[0]
+	if c.done != nil {
+		c.list = append(c.list, *c.done)
 	}
 	return c
 }

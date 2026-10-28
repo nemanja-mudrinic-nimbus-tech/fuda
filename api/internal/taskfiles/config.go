@@ -85,7 +85,7 @@ type stageEntry struct {
 	Days     yaml.Node `yaml:"days"`
 }
 
-const DefaultDoneDays = 14
+const defaultDoneDays = 14
 
 func decodeStages(n *yaml.Node, dst *[]Stage, warnings *[]string) error {
 	if n == missingKey {
@@ -99,7 +99,8 @@ func decodeStages(n *yaml.Node, dst *[]Stage, warnings *[]string) error {
 		return errors.New("stages: the list is empty")
 	}
 	stages := make([]Stage, 0, len(entries))
-	var dayWarnings []string
+	var stageWarnings []string
+	hasDone := false
 	for i, e := range entries {
 		if e.Name == "" {
 			return fmt.Errorf("stages: entry %d has no name", i+1)
@@ -114,9 +115,14 @@ func decodeStages(n *yaml.Node, dst *[]Stage, warnings *[]string) error {
 			if len(e.Status) > 0 {
 				return fmt.Errorf("stages: %q has when: done, which takes no status list", e.Name)
 			}
+			if hasDone {
+				stageWarnings = append(stageWarnings, fmt.Sprintf("stages: %q is a second when: done entry; ignored", e.Name))
+				continue
+			}
+			hasDone = true
 			days, ok := doneDays(e.Days)
 			if !ok {
-				dayWarnings = append(dayWarnings, fmt.Sprintf("stages: %q has days %q, not a positive whole number; uses %d", e.Name, e.Days.Value, DefaultDoneDays))
+				stageWarnings = append(stageWarnings, fmt.Sprintf("stages: %q has days %q, not a positive whole number; uses %d", e.Name, e.Days.Value, defaultDoneDays))
 			}
 			stages = append(stages, Stage{Name: e.Name, WhenDone: true, Days: days, Activity: e.Activity})
 		default:
@@ -124,17 +130,17 @@ func decodeStages(n *yaml.Node, dst *[]Stage, warnings *[]string) error {
 		}
 	}
 	*dst = stages
-	*warnings = dayWarnings
+	*warnings = stageWarnings
 	return nil
 }
 
 func doneDays(n yaml.Node) (int, bool) {
 	if n.Kind == 0 {
-		return DefaultDoneDays, true
+		return defaultDoneDays, true
 	}
 	days, err := strconv.Atoi(n.Value)
 	if n.Kind != yaml.ScalarNode || err != nil || days < 1 {
-		return DefaultDoneDays, false
+		return defaultDoneDays, false
 	}
 	return days, true
 }

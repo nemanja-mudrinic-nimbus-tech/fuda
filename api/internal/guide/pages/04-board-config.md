@@ -42,7 +42,7 @@ stages:
   be moved or assigned, and nothing can be dropped on it. The filters apply to it as to the other
   columns. Without a `when: done` entry, done tasks show only on the Archive tab.
 - `days` must be a positive whole number. Any other value is listed under Problems and the column
-  uses 14.
+  uses 14. Only one `when: done` entry counts; a second one is listed under Problems and ignored.
 - A status no column lists gets its own column, marked unknown, before the Done column.
 
 ## labels.md: label groups, values and colours

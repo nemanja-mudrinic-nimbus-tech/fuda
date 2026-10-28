@@ -238,7 +238,7 @@ flowchart TD
 - An invalid `stages.md`, `labels.md`, `people.md` or `repos.md`: the file is ignored and the board is derived
   from the tasks instead.
 - A `when: done` stage with a `days` that is not a positive whole number: the stage stays and its
-  window is 14 days.
+  window is 14 days. A second `when: done` stage: it is ignored.
 
 ### Facets (what the filters offer)
 
