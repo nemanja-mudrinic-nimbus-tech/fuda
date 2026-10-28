@@ -327,7 +327,7 @@ func TestDoneColumnFollowsTheDateWithoutNewCommits(t *testing.T) {
 			t.Fatal(err)
 		}
 		view, _ := s.Board()
-		return len(slices.DeleteFunc(slices.Clone(view.Board.Cards), func(c Card) bool { return c.Column != "done" }))
+		return len(slices.DeleteFunc(slices.Clone(view.Cards), func(c Card) bool { return c.Column != "done" }))
 	}
 	if got := doneCards(); got != 1 {
 		t.Fatalf("want A1 in Done on day 2 of the window, got %d", got)
