@@ -153,6 +153,13 @@ export function TaskCard({
         </span>
       </div>
       <p className="mt-1 text-[13px] leading-snug text-card-foreground">{card.title}</p>
+      {card.activity && (
+        <p className="mt-1 truncate text-[11px] text-muted-foreground">
+          {card.activity.actor
+            ? `${card.activity.actor} · ${card.activity.event}`
+            : card.activity.text}
+        </p>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-1 empty:hidden">
         <CardSignals card={card} />
         {ranked.slice(0, visibleLabels).map((label) => (

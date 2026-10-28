@@ -7,6 +7,7 @@ export type Column = {
   statuses: string[]
   prOpen: boolean
   unknown: boolean
+  activity: boolean
 }
 
 export type Card = {
@@ -30,7 +31,17 @@ export type Card = {
   references: string[]
   referencedBy: string[]
   inProd: boolean
+  activity?: Activity
   path: string
+}
+
+export type Activity = {
+  when?: string
+  actor?: string
+  event?: string
+  result?: string
+  usage?: string
+  text: string
 }
 
 export type OpenPr = { number: number; url: string }
@@ -77,6 +88,7 @@ export type BoardListing = { host: Host; repo: string; path: string; title: stri
 
 export type TaskDetail = Card & {
   custom: { key: string; value: string }[]
+  activities: Activity[]
   html: string
 }
 

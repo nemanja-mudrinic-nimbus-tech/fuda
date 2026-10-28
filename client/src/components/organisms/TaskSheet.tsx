@@ -4,6 +4,7 @@ import { LabelChip } from '@/components/atoms/LabelChip'
 import { PersonChip } from '@/components/atoms/PersonChip'
 import { StatusIcon } from '@/components/atoms/StatusIcon'
 import { TaskLink } from '@/components/atoms/TaskLink'
+import { ActivityTimeline } from '@/components/molecules/ActivityTimeline'
 import { OwnerPicker } from '@/components/molecules/OwnerPicker'
 import { StagePicker } from '@/components/molecules/StagePicker'
 import { RichContent } from '@/components/molecules/RichContent'
@@ -190,6 +191,7 @@ export function TaskSheet({ taskIds, prLink }: { taskIds: string[]; prLink?: str
               lead="Done when"
               dropTitle
             />
+            <ActivityTimeline entries={task.activities} />
             <p className="font-mono text-[11px] text-muted-foreground">{task.path}</p>
           </div>
         )}
