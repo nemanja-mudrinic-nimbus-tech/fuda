@@ -114,12 +114,16 @@ export function filterCards(cards: Card[], search: BoardSearch, textMatches?: st
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
+const byId = (a: Card, b: Card) => collator.compare(a.id, b.id)
+const byAdded = (a: Card, b: Card) => b.added.localeCompare(a.added) || byId(a, b)
+const byDone = (a: Card, b: Card) => (b.done ?? '').localeCompare(a.done ?? '') || byId(a, b)
+
 export function sortCards(cards: Card[], sort: BoardSearch['sort']): Card[] {
-  const sorted = [...cards]
-  if (sort === 'added') {
-    return sorted.sort((a, b) => b.added.localeCompare(a.added) || collator.compare(a.id, b.id))
-  }
-  return sorted.sort((a, b) => collator.compare(a.id, b.id))
+  const open = sort === 'added' ? byAdded : byId
+  return [...cards].sort((a, b) => {
+    if (a.archived !== b.archived) return a.archived ? 1 : -1
+    return a.archived ? byDone(a, b) : open(a, b)
+  })
 }
 
 export function activeFilterCount(search: BoardSearch): number {

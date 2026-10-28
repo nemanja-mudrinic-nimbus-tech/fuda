@@ -180,6 +180,17 @@ describe('sortCards', () => {
     expect(ids(sortCards(cards, 'id'))).toEqual(['SS-2', 'SS-3', 'SS-10'])
     expect(ids(sortCards(cards, 'added'))).toEqual(['SS-10', 'SS-3', 'SS-2'])
   })
+
+  it('keeps Done cards newest done first in every sort', () => {
+    const done = [
+      card('SS-4', { archived: true, done: '2026-10-26', added: '2026-10-01' }),
+      card('SS-11', { archived: true, done: '2026-10-28', added: '2026-09-01' }),
+      card('SS-5', { archived: true, done: '2026-10-27', added: '2026-10-20' }),
+    ]
+    for (const sort of ['id', 'added'] as const) {
+      expect(ids(sortCards([...done, ...cards], sort)).slice(-3)).toEqual(['SS-11', 'SS-5', 'SS-4'])
+    }
+  })
 })
 
 describe('countFacets', () => {

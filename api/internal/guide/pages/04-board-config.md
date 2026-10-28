@@ -36,7 +36,7 @@ stages:
   section in short form: `<actor> · <event>`. A card without that section looks the same as in
   any other column.
 - `when: done` adds a Done column with the archived tasks whose `done` date is within the last
-  `days` days, today included, newest first. Without `days` the window is 14 days. An archived
+  `days` days, today included, newest first whatever the board's sort. Without `days` the window is 14 days. An archived
   task without a valid `done` date (`YYYY-MM-DD`) is not in the column. Older tasks show only on
   the Archive tab. The column is always the last one and takes no status list. Its cards cannot
   be moved or assigned, and nothing can be dropped on it. The filters apply to it as to the other
