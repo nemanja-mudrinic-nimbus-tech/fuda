@@ -13,6 +13,7 @@ stages:
     status: [backlog]
   - name: In progress
     status: [in progress]
+    activity: true
   - name: In review
     when: pr-open
   - name: Merged
@@ -28,6 +29,9 @@ stages:
   own status icon.
 - `when: pr-open` is the derived column: a task that an open pull request names shows there,
   whatever its status.
+- `activity: true` makes the column's cards show the latest entry of the task's `## Activity`
+  section in short form: `<actor> · <event>`. A card without that section looks the same as in
+  any other column.
 - A status no column lists gets its own column at the end, marked unknown.
 
 ## labels.md: label groups, values and colours
