@@ -157,6 +157,7 @@ builds a new snapshot and swaps it in. A snapshot contains:
 
 - the parsed develop result (tasks, archive, config, problems) and, when watched, main;
 - the built `Board` (columns, cards, facets, problems), computed once per sync;
+- the date it was built on, so a sync rebuilds the Board when the day changes (Done column);
 - docs (`*.md`) and images under `docs/`, kept as bytes (images up to 5 MB each);
 - the open-PR result (which open PRs name each task: In review);
 - the head SHA per branch it was built from.
@@ -204,6 +205,9 @@ flowchart TD
   M -- yes --> COL["that stage's column"]
   M -- no --> UNK["a column named after the status,<br/>flagged unknown, at the end"]
   ST -- no --> DEF["default stages: Backlog, In progress, In review,<br/>Merged, Testing, Validated; other statuses flagged unknown"]
+  A["task file in docs/board/archive/"] --> DQ{"a stage has when: done,<br/>and done is within its days?"}
+  DQ -- yes --> DONE["Done column, the last one"]
+  DQ -- no --> AV["Archive view only"]
 ```
 
 - **Names:** the task's id appears, as a whole word and in any case, in the title or branch name
@@ -216,6 +220,12 @@ flowchart TD
 - **main** never moves a card. When watched, a card whose main copy is merged, testing or validated
   gets the "in prod" badge.
 - **Archived tasks** (`docs/board/archive/`) are not on the board; `/api/archive` lists them.
+  The exception is a `stages.md` entry with `when: done`: it makes a Done column, always the last,
+  with the archived tasks whose `done` date is within the last `days` days (default 14), today
+  included, in the server's local date, newest first. A task without a valid `done` date is not
+  in it. Done cards are archived, so a Move or an Assign is refused, and the column has no
+  statuses, so nothing drops on it. The filters and facets cover them like other cards; Insights
+  ignore them.
 
 ### Validation (what becomes a Problem)
 
@@ -227,6 +237,8 @@ flowchart TD
 - A task file in a sub-folder of `tasks/` or `archive/`.
 - An invalid `stages.md`, `labels.md`, `people.md` or `repos.md`: the file is ignored and the board is derived
   from the tasks instead.
+- A `when: done` stage with a `days` that is not a positive whole number: the stage stays and its
+  window is 14 days.
 
 ### Facets (what the filters offer)
 
@@ -239,7 +251,7 @@ flowchart TD
   default `type` values added.
 - **Label colours:** `labels.md` `colors:` first, then fixed colours for the default types, then
   a palette in order per group.
-- **Statuses, testers, id prefixes:** from the tasks.
+- **Statuses, testers, id prefixes:** from the tasks, including those in the Done column.
 
 ## End to end
 
@@ -264,7 +276,7 @@ sequenceDiagram
   Main-->>Fuda: poll sees a new head
   Note over Fuda: "in prod" badge
   Dev->>Develop: move to archive/, status done
-  Note over Fuda: off the board, in the Archive view
+  Note over Fuda: in the Done column for days days if stages.md has when: done, always in the Archive view
 ```
 
 The statuses and who changes them are in the Guide's workflow page.
