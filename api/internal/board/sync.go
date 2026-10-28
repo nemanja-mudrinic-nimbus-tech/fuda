@@ -103,6 +103,10 @@ func (s *Service) load(ctx context.Context) error {
 	if current != nil && maps.Equal(current.heads, heads) {
 		found, err := s.openReviews(ctx, current.develop)
 		if err != nil {
+			if current.day != s.now().Format(time.DateOnly) {
+				current = s.build(current.develop, current.main, current.files, heads, current.reviews)
+				s.snapshot.Store(current)
+			}
 			s.markSynced(heads, current)
 			return fmt.Errorf("open pull requests: %w", err)
 		}

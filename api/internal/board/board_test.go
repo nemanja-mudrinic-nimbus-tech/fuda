@@ -2,6 +2,7 @@ package board
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"slices"
 	"testing"
@@ -336,4 +337,43 @@ func TestDoneColumnFollowsTheDateWithoutNewCommits(t *testing.T) {
 	if got := doneCards(); got != 0 {
 		t.Errorf("want A1 out of Done the next day, got %d", got)
 	}
+}
+
+func TestDoneColumnFollowsTheDateWhenOpenPRsFail(t *testing.T) {
+	files := map[string][]byte{
+		"docs/board/stages.md":     []byte("---\nstages:\n  - name: Backlog\n    status: [backlog]\n  - name: Done\n    when: done\n    days: 1\n---\n"),
+		"docs/board/repos.md":      []byte("---\ncode_repos: [acme/app]\n---\n"),
+		"docs/board/archive/A1.md": []byte("---\nid: A1\ntitle: t\nstatus: done\ndone: 2026-10-28\n---\n"),
+	}
+	source := &failingPRSource{fakeSource: fakeSource{files}}
+	s := NewService(source, Options{DocsRoot: "docs", BoardDir: "docs/board", WorkBranch: "develop", ProdBranch: "main"})
+	now := time.Date(2026, 10, 28, 12, 0, 0, 0, time.Local)
+	s.now = func() time.Time { return now }
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if view, _ := s.Board(); !slices.ContainsFunc(view.Cards, func(c Card) bool { return c.Column == "done" }) {
+		t.Fatal("want A1 in Done on its done day")
+	}
+	source.fail = true
+	now = now.AddDate(0, 0, 1)
+	if err := s.Sync(context.Background()); err == nil {
+		t.Fatal("want the open-PR error reported")
+	}
+	view, _ := s.Board()
+	if slices.ContainsFunc(view.Cards, func(c Card) bool { return c.Column == "done" }) {
+		t.Error("want A1 out of Done the next day even when open PRs fail")
+	}
+}
+
+type failingPRSource struct {
+	fakeSource
+	fail bool
+}
+
+func (f *failingPRSource) OpenPRs(context.Context, string) ([]PullRequest, error) {
+	if f.fail {
+		return nil, errors.New("host is down")
+	}
+	return nil, nil
 }
