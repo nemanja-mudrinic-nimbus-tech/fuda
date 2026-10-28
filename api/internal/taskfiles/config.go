@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -22,9 +23,13 @@ func parseConfig(files map[string][]byte, layout Layout, problems *[]Problem) Co
 			*problems = append(*problems, Problem{Path: p, Reason: err.Error() + "; ignored, derived from the tasks instead"})
 		}
 	}
+	var stageWarnings []string
 	load("stages.md", func(keys map[string]*yaml.Node) error {
-		return decodeStages(required(keys, "stages"), &c.Stages)
+		return decodeStages(required(keys, "stages"), &c.Stages, &stageWarnings)
 	})
+	for _, w := range stageWarnings {
+		*problems = append(*problems, Problem{Path: path.Join(layout.BoardDir, "stages.md"), Reason: w})
+	}
 	load("labels.md", func(keys map[string]*yaml.Node) error {
 		if err := decodeLabelGroups(required(keys, "groups"), &c.LabelGroups); err != nil {
 			return err
@@ -73,13 +78,16 @@ func decodeConfig(content []byte, decode func(map[string]*yaml.Node) error) erro
 }
 
 type stageEntry struct {
-	Name     string   `yaml:"name"`
-	Status   []string `yaml:"status"`
-	When     string   `yaml:"when"`
-	Activity bool     `yaml:"activity"`
+	Name     string    `yaml:"name"`
+	Status   []string  `yaml:"status"`
+	When     string    `yaml:"when"`
+	Activity bool      `yaml:"activity"`
+	Days     yaml.Node `yaml:"days"`
 }
 
-func decodeStages(n *yaml.Node, dst *[]Stage) error {
+const DefaultDoneDays = 14
+
+func decodeStages(n *yaml.Node, dst *[]Stage, warnings *[]string) error {
 	if n == missingKey {
 		return errors.New("stages: missing the stages key")
 	}
@@ -91,20 +99,44 @@ func decodeStages(n *yaml.Node, dst *[]Stage) error {
 		return errors.New("stages: the list is empty")
 	}
 	stages := make([]Stage, 0, len(entries))
+	var dayWarnings []string
 	for i, e := range entries {
 		if e.Name == "" {
 			return fmt.Errorf("stages: entry %d has no name", i+1)
 		}
-		if e.When != "" && e.When != "pr-open" {
-			return fmt.Errorf("stages: %q has unknown when %q (only pr-open)", e.Name, e.When)
+		switch e.When {
+		case "", "pr-open":
+			if len(e.Status) == 0 && e.When == "" {
+				return fmt.Errorf("stages: %q needs a status list, when: pr-open or when: done", e.Name)
+			}
+			stages = append(stages, Stage{Name: e.Name, Statuses: e.Status, WhenPROpen: e.When == "pr-open", Activity: e.Activity})
+		case "done":
+			if len(e.Status) > 0 {
+				return fmt.Errorf("stages: %q has when: done, which takes no status list", e.Name)
+			}
+			days, ok := doneDays(e.Days)
+			if !ok {
+				dayWarnings = append(dayWarnings, fmt.Sprintf("stages: %q has days %q, not a positive whole number; uses %d", e.Name, e.Days.Value, DefaultDoneDays))
+			}
+			stages = append(stages, Stage{Name: e.Name, WhenDone: true, Days: days, Activity: e.Activity})
+		default:
+			return fmt.Errorf("stages: %q has unknown when %q (only pr-open or done)", e.Name, e.When)
 		}
-		if len(e.Status) == 0 && e.When == "" {
-			return fmt.Errorf("stages: %q needs a status list or when: pr-open", e.Name)
-		}
-		stages = append(stages, Stage{Name: e.Name, Statuses: e.Status, WhenPROpen: e.When == "pr-open", Activity: e.Activity})
 	}
 	*dst = stages
+	*warnings = dayWarnings
 	return nil
+}
+
+func doneDays(n yaml.Node) (int, bool) {
+	if n.Kind == 0 {
+		return DefaultDoneDays, true
+	}
+	days, err := strconv.Atoi(n.Value)
+	if n.Kind != yaml.ScalarNode || err != nil || days < 1 {
+		return DefaultDoneDays, false
+	}
+	return days, true
 }
 
 func decodeLabelGroups(n *yaml.Node, dst *[]LabelGroup) error {

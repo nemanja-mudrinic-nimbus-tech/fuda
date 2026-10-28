@@ -91,6 +91,7 @@ type snapshot struct {
 	links   markdown.Links
 	byID    map[string]taskfiles.Task
 	heads   map[string]string
+	day     string
 }
 
 func NewService(source Source, opts Options) *Service {
@@ -186,30 +187,6 @@ func (s *Service) Archive() []Card {
 		out = append(out, archivedCard(t))
 	}
 	return out
-}
-
-func archivedCard(t taskfiles.Task) Card {
-	return Card{
-		ID:           t.ID,
-		Title:        t.Title,
-		Status:       t.Status,
-		Owners:       orEmpty(t.Owners),
-		Testers:      orEmpty(t.Testers),
-		Labels:       labelStrings(t.Labels),
-		Prefix:       idPrefix(t.ID),
-		Added:        t.Added,
-		Claimed:      t.Claimed,
-		Done:         t.Done,
-		PRs:          orEmpty(t.PRs),
-		PRRef:        t.PRRef,
-		OpenPRs:      []LinkedPR{},
-		BlockedBy:    t.BlockedBy,
-		BlockedByIDs: []string{},
-		Blocks:       []string{},
-		References:   []string{},
-		ReferencedBy: []string{},
-		Path:         t.Path,
-	}
 }
 
 var markdownLink = regexp.MustCompile(`\]\(([^)\s#]+)`)

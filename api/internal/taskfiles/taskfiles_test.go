@@ -166,6 +166,46 @@ people:
 	checkDeep(t, "code repos", r.Config.CodeRepos, []string{"acme/app", "acme/web"})
 }
 
+func TestParseDoneStage(t *testing.T) {
+	cases := []struct {
+		name     string
+		days     string
+		want     int
+		problems int
+	}{
+		{"default window", "", DefaultDoneDays, 0},
+		{"set window", "\n    days: 7", 7, 0},
+		{"zero days", "\n    days: 0", DefaultDoneDays, 1},
+		{"text days", "\n    days: soon", DefaultDoneDays, 1},
+		{"fraction days", "\n    days: 1.5", DefaultDoneDays, 1},
+		{"list days", "\n    days: [3]", DefaultDoneDays, 1},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			content := "---\nstages:\n  - name: Backlog\n    status: [backlog]\n  - name: Done\n    when: done" + c.days + "\n---\n"
+			r := Parse(map[string][]byte{"docs/board/stages.md": []byte(content)}, layout)
+			if len(r.Problems) != c.problems {
+				t.Fatalf("want %d problems, got %+v", c.problems, r.Problems)
+			}
+			if c.problems > 0 && r.Problems[0].Path != "docs/board/stages.md" {
+				t.Errorf("problem path %q", r.Problems[0].Path)
+			}
+			checkDeep(t, "stages", r.Config.Stages, []Stage{
+				{Name: "Backlog", Statuses: []string{"backlog"}},
+				{Name: "Done", WhenDone: true, Days: c.want},
+			})
+		})
+	}
+}
+
+func TestParseDoneStageWithStatusIsIgnored(t *testing.T) {
+	content := "---\nstages:\n  - name: Done\n    when: done\n    status: [done]\n---\n"
+	r := Parse(map[string][]byte{"docs/board/stages.md": []byte(content)}, layout)
+	if len(r.Problems) != 1 || r.Config.Stages != nil {
+		t.Fatalf("want the file ignored with one problem, got %+v %+v", r.Problems, r.Config.Stages)
+	}
+}
+
 func TestParseInvalidConfigIsIgnored(t *testing.T) {
 	cases := map[string]string{
 		"docs/board/stages.md": "---\nstages:\n  - status: [backlog]\n---\n",

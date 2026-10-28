@@ -47,6 +47,8 @@ type Stage struct {
 	Name       string
 	Statuses   []string
 	WhenPROpen bool
+	WhenDone   bool
+	Days       int
 	Activity   bool
 }
 
