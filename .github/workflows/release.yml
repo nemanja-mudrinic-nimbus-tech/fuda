@@ -38,8 +38,11 @@ jobs:
           node-version: 24
       - name: Build
         shell: bash
+        env:
+          FUDA_GITHUB_BOARDS: ${{ vars.FUDA_GITHUB_BOARDS }}
+          FUDA_AZURE_BOARDS: ${{ vars.FUDA_AZURE_BOARDS }}
         run: |
-          make ${{ matrix.target }} ARCH=${{ matrix.arch }} VERSION=${GITHUB_REF_NAME#v} GITHUB_CLIENT_ID=${{ vars.FUDA_GITHUB_CLIENT_ID }} GITHUB_APP_SLUG=${{ vars.FUDA_GITHUB_APP_SLUG }}
+          make ${{ matrix.target }} ARCH=${{ matrix.arch }} VERSION=${GITHUB_REF_NAME#v} GITHUB_CLIENT_ID=${{ vars.FUDA_GITHUB_CLIENT_ID }} GITHUB_APP_SLUG=${{ vars.FUDA_GITHUB_APP_SLUG }} GITHUB_BOARDS="$FUDA_GITHUB_BOARDS" AZURE_BOARDS="$FUDA_AZURE_BOARDS"
       - name: Pack and upload
         shell: bash
         env:
