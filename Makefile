@@ -7,10 +7,13 @@ VERSION ?= dev
 GITHUB_CLIENT_ID ?=
 GITHUB_APP_SLUG ?=
 AZURE_CLIENT_ID ?=
+GITHUB_BOARDS ?=
+AZURE_BOARDS ?=
 ARCH ?= $(shell go env GOARCH)
 DESKTOP_IDS := $(ENV) github_id="$(GITHUB_CLIENT_ID)"; github_slug="$(GITHUB_APP_SLUG)"; azure_id="$(AZURE_CLIENT_ID)"; \
+	github_boards="$(GITHUB_BOARDS)"; azure_boards="$(AZURE_BOARDS)"; \
 	[ -n "$${github_id:-$$FUDA_GITHUB_CLIENT_ID}" ] && [ -n "$${github_slug:-$$FUDA_GITHUB_APP_SLUG}" ] || { echo "The desktop build needs GITHUB_CLIENT_ID and GITHUB_APP_SLUG (or FUDA_GITHUB_CLIENT_ID and FUDA_GITHUB_APP_SLUG in the env file)"; exit 1; };
-DESKTOP_LDFLAGS := -X main.version=$(VERSION) -X main.githubClientID=$${github_id:-$$FUDA_GITHUB_CLIENT_ID} -X main.githubAppSlug=$${github_slug:-$$FUDA_GITHUB_APP_SLUG} -X main.azureClientID=$${azure_id:-$$FUDA_AZURE_CLIENT_ID}
+DESKTOP_LDFLAGS := -X main.version=$(VERSION) -X main.githubClientID=$${github_id:-$$FUDA_GITHUB_CLIENT_ID} -X main.githubAppSlug=$${github_slug:-$$FUDA_GITHUB_APP_SLUG} -X main.azureClientID=$${azure_id:-$$FUDA_AZURE_CLIENT_ID} -X 'main.githubBoards=$${github_boards:-$$FUDA_GITHUB_BOARDS}' -X 'main.azureBoards=$${azure_boards:-$$FUDA_AZURE_BOARDS}'
 
 dev:
 	$(MAKE) -j2 dev-api dev-client

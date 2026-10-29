@@ -39,6 +39,8 @@ such as `http://192.168.1.5:8080` has no working login.
 | `FUDA_GITHUB_APP_SLUG` | | The GitHub App's slug, the last part of `github.com/apps/<slug>`. Required with `github`: fuda does not start without it. It builds the install link |
 | `FUDA_BASE_URL`, `FUDA_COOKIE_SECRET` | | Only for `azure`: the public address (login callback) and the key that encrypts its login cookie, at least 32 characters. Not used for GitHub |
 | `FUDA_AZURE_CLIENT_ID`, `FUDA_AZURE_CLIENT_SECRET` | | The Microsoft Entra ID app's client id and secret (when `FUDA_HOSTS` includes `azure`) |
+| `FUDA_GITHUB_BOARDS` | | Optional. More GitHub repositories to list as Boards, next to the `fuda-` ones: `owner/repo`, separated by commas. Example: `acme/activity-tracker,acme/notes`. Case is ignored. A repository shows only when the person can read it; the setting never gives access. A name without exactly two parts stops fuda at start |
+| `FUDA_AZURE_BOARDS` | | Optional. The same for Azure DevOps: `org/project/repo`, separated by commas. Example: `acme/Team/activity-tracker` |
 | `FUDA_AZURE_TENANT` | `organizations` | The Entra tenant that may log in. Use your tenant id for a single-tenant app |
 | `FUDA_TITLE` | repository name | Shown in the header of the `local` Board |
 | `FUDA_WATCH_MAIN` | `false` | Also read `main` for the "in prod" badge |
@@ -53,7 +55,7 @@ proxy's authentication.
 
 - Not logged in: a Board page sends you to the login page. For GitHub it shows a code to type on github.com. Then you come back.
 - After login the Board button in the top bar lists the `fuda-` repositories the app is installed
-  on and you can read. `/` opens the only Board, or lists them.
+  on and you can read, and the ones named in `FUDA_GITHUB_BOARDS` or `FUDA_AZURE_BOARDS` that you can read. `/` opens the only Board, or lists them.
 - App not installed: login still works, but the list is empty. fuda checks this after login and shows a banner with the install link. People who cannot install the App can send the link to an owner of the organisation.
 - No access: the page says so. Check that the app is installed on the repository and that your
   account can read it.

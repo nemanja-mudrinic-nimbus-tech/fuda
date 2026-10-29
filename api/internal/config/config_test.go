@@ -1,6 +1,7 @@
 package config
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -141,5 +142,60 @@ func TestDesktopEnvironmentWinsOverTheBuildValues(t *testing.T) {
 func TestDesktopNeedsTheGitHubBuildValues(t *testing.T) {
 	if _, err := LoadDesktop(DesktopDefaults{}); err == nil {
 		t.Error("a desktop without the GitHub values passed")
+	}
+}
+
+func githubEnv(t *testing.T) {
+	t.Setenv("FUDA_HOSTS", "github")
+	t.Setenv("FUDA_GITHUB_CLIENT_ID", "g")
+	t.Setenv("FUDA_GITHUB_APP_SLUG", "fuda")
+}
+
+func TestBoardSettingsAreTrimmedAndSkipEmptyNames(t *testing.T) {
+	githubEnv(t)
+	t.Setenv("FUDA_GITHUB_BOARDS", " o/activity-tracker , ,o/notes,")
+	t.Setenv("FUDA_AZURE_BOARDS", "")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(cfg.GitHubBoards, []string{"o/activity-tracker", "o/notes"}) || len(cfg.AzureBoards) != 0 {
+		t.Errorf("boards: %q %q", cfg.GitHubBoards, cfg.AzureBoards)
+	}
+}
+
+func TestABoardNameWithTheWrongPartsStopsFuda(t *testing.T) {
+	tests := []struct{ setting, value string }{
+		{"FUDA_GITHUB_BOARDS", "activity-tracker"},
+		{"FUDA_GITHUB_BOARDS", "o/r/x"},
+		{"FUDA_GITHUB_BOARDS", "o/"},
+		{"FUDA_AZURE_BOARDS", "org/repo"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.setting+"="+tt.value, func(t *testing.T) {
+			githubEnv(t)
+			t.Setenv(tt.setting, tt.value)
+			_, err := Load()
+			if err == nil || !strings.Contains(err.Error(), tt.setting) || !strings.Contains(err.Error(), tt.value) {
+				t.Errorf("err = %v, want one that names %s and %q", err, tt.setting, tt.value)
+			}
+		})
+	}
+}
+
+func TestDesktopBoardSettingsFallBackToTheBuildValues(t *testing.T) {
+	t.Setenv("FUDA_AZURE_BOARDS", "env/p/r")
+	cfg, err := LoadDesktop(DesktopDefaults{GitHubClientID: "g", GitHubAppSlug: "fuda", GitHubBoards: "o/a, o/b", AzureBoards: "build/p/r"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(cfg.GitHubBoards, []string{"o/a", "o/b"}) || !slices.Equal(cfg.AzureBoards, []string{"env/p/r"}) {
+		t.Errorf("boards: %q %q", cfg.GitHubBoards, cfg.AzureBoards)
+	}
+}
+
+func TestDesktopRefusesABadBuildBoardName(t *testing.T) {
+	if _, err := LoadDesktop(DesktopDefaults{GitHubClientID: "g", GitHubAppSlug: "fuda", GitHubBoards: "nope"}); err == nil {
+		t.Error("a bad build board name passed")
 	}
 }

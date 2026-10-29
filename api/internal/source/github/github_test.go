@@ -28,7 +28,7 @@ func TestListBoardsKeepsOnlyFudaRepositories(t *testing.T) {
 		}
 		_, _ = w.Write([]byte(`[{"full_name":"o/fuda-tasks","name":"fuda-tasks"},{"full_name":"o/api","name":"api"},{"full_name":"o/not-fuda-x","name":"not-fuda-x"}]`))
 	})
-	got, err := s.listBoards(board.WithToken(context.Background(), "user-token"))
+	got, err := s.listBoards(board.WithToken(context.Background(), "user-token"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestListBoardsFollowsPages(t *testing.T) {
 		}
 		_, _ = w.Write([]byte(`[{"full_name":"o/fuda-late","name":"fuda-late"}]`))
 	})
-	got, err := s.listBoards(board.WithToken(context.Background(), "t"))
+	got, err := s.listBoards(board.WithToken(context.Background(), "t"), nil)
 	if err != nil || !slices.Equal(got, []string{"o/fuda-late"}) || pages != 2 {
 		t.Errorf("got %v, %v after %d pages", got, err, pages)
 	}
@@ -157,6 +157,31 @@ func TestAppInstalledReadsTheInstallationCount(t *testing.T) {
 			got, err := s.appInstalled(board.WithToken(context.Background(), "user-token"))
 			if got != tc.want || (err != nil) != tc.failed {
 				t.Errorf("got %v, %v", got, err)
+			}
+		})
+	}
+}
+
+func TestListBoardsAddsTheListedRepositories(t *testing.T) {
+	s := serve(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[{"full_name":"o/fuda-tasks","name":"fuda-tasks"},{"full_name":"o/activity-tracker","name":"activity-tracker"},{"full_name":"o/api","name":"api"}]`))
+	})
+	tests := []struct {
+		name   string
+		listed []string
+		want   []string
+	}{
+		{"prefix only", nil, []string{"o/fuda-tasks"}},
+		{"listed", []string{"o/activity-tracker"}, []string{"o/fuda-tasks", "o/activity-tracker"}},
+		{"case ignored", []string{"O/Activity-Tracker"}, []string{"o/fuda-tasks", "o/activity-tracker"}},
+		{"prefix and listed once", []string{"o/fuda-tasks"}, []string{"o/fuda-tasks"}},
+		{"listed but not returned", []string{"o/secret"}, []string{"o/fuda-tasks"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := s.listBoards(board.WithToken(context.Background(), "t"), tt.listed)
+			if err != nil || !slices.Equal(got, tt.want) {
+				t.Errorf("got %v, %v, want %v", got, err, tt.want)
 			}
 		})
 	}

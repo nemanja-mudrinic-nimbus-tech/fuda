@@ -70,9 +70,13 @@ with a proposal.
   plain-HTTP LAN address has no working login. The Sign in button in the app bar starts login; there
   is no automatic login screen. `FUDA_GITHUB_CLIENT_SECRET`, and for GitHub `FUDA_COOKIE_SECRET` and
   `FUDA_BASE_URL`, are ignored with one warning. Azure keeps its redirect login.
-- **A Board is a `fuda-` repository the person can read.** The Board dropdown lists them from
-  `GET /user/repos`, which only returns repositories the app is installed on. `/` opens the only
-  Board or lists them.
+- **A Board is a repository the person can read, named `fuda-…` or listed in `FUDA_GITHUB_BOARDS`
+  / `FUDA_AZURE_BOARDS`.** The Board dropdown lists them from `GET /user/repos` (on Azure, the
+  repositories of each organization), which only returns repositories the person can read. The
+  setting only filters that list, so it never gives access. Names are `owner/repo` and
+  `org/project/repo`, separated by commas, case ignored; a wrong number of parts stops fuda at
+  start. Why: a board in a repository with another name opens from the picker without a rename.
+  `/` opens the only Board or lists them.
 - **The App slug is required, and install is checked after login.** `FUDA_GITHUB_APP_SLUG` is
   required with the GitHub source; without it there is no install link, so fuda does not start.
   The host status carries `appInstalled` from `GET /user/installations`; when that call fails the
@@ -115,7 +119,8 @@ updates [architecture.md](architecture.md).
   This will also replace "develop is the board".
 - **Open:** nothing to decide. Ready for a spec.
 - **Proposal:**
-  - **Boards.** A Board is a tasks repository whose name starts with `fuda-`, mounted in its code
+  - **Boards.** A Board is a tasks repository whose name starts with `fuda-` or that is listed in
+    `FUDA_GITHUB_BOARDS` / `FUDA_AZURE_BOARDS`, mounted in its code
     repository as a submodule at `docs/board`. fuda finds Boards from the user's login and lists
     them in the Board button's dropdown in the top bar. URLs start with the host: `/github/<owner>/<repo>/`,
     `/azure/<org>/<project>/<repo>/`, `/local/<folder>/`. An empty `fuda-` repo is an empty Board
