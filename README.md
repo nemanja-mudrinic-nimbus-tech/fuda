@@ -39,7 +39,7 @@ Keep the volume: fuda saves its login cookie key there, and a new key logs every
 over HTTPS; login cookies are `Secure` except on localhost.
 
 People log in with the fuda GitHub App. fuda lists every `fuda-` repository they can read and the
-App is installed on, and reads each Board with that person's own token. There is no server token and
+App is installed on, plus the repositories named in `FUDA_GITHUB_BOARDS`, and reads each Board with that person's own token. There is no server token and
 no shared password. Boards open at `/github/<owner>/<repo>/`; `/` lists them, or opens the only one.
 The App must be installed on the organisation or user that owns the `fuda-` repositories. If it is not,
 fuda shows a banner with an install link (built from `FUDA_GITHUB_APP_SLUG`). Set up the App in the [Self-host guide](api/internal/guide/pages/08-self-host.md).

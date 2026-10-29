@@ -63,9 +63,9 @@ func listBoards(cfg config.Config, folders *Folders) func(context.Context, board
 	return func(ctx context.Context, host board.Host) ([]board.ID, error) {
 		switch {
 		case host == board.HostGitHub && cfg.Has(board.HostGitHub):
-			return boardIDs(ctx, board.HostGitHub, github.ListBoards)
+			return boardIDs(ctx, board.HostGitHub, cfg.GitHubBoards, github.ListBoards)
 		case host == board.HostAzure && cfg.Has(board.HostAzure):
-			return boardIDs(ctx, board.HostAzure, azure.ListBoards)
+			return boardIDs(ctx, board.HostAzure, cfg.AzureBoards, azure.ListBoards)
 		case host == board.HostLocal:
 			return folders.List(), nil
 		}
@@ -73,8 +73,8 @@ func listBoards(cfg config.Config, folders *Folders) func(context.Context, board
 	}
 }
 
-func boardIDs(ctx context.Context, host board.Host, list func(context.Context) ([]string, error)) ([]board.ID, error) {
-	repos, err := list(ctx)
+func boardIDs(ctx context.Context, host board.Host, listed []string, list func(context.Context, []string) ([]string, error)) ([]board.ID, error) {
+	repos, err := list(ctx, listed)
 	if err != nil {
 		return nil, err
 	}

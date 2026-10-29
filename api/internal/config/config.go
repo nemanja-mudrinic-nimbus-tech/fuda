@@ -33,6 +33,9 @@ type Config struct {
 	AzureClientID     string `env:"FUDA_AZURE_CLIENT_ID"`
 	AzureClientSecret string `env:"FUDA_AZURE_CLIENT_SECRET"`
 
+	GitHubBoards []string `env:"FUDA_GITHUB_BOARDS"`
+	AzureBoards  []string `env:"FUDA_AZURE_BOARDS"`
+
 	WatchMain    bool          `env:"FUDA_WATCH_MAIN" envDefault:"false"`
 	SyncCooldown time.Duration `env:"FUDA_SYNC_COOLDOWN" envDefault:"30s"`
 	CacheDir     string        `env:"FUDA_CACHE_DIR" envDefault:"./.fuda-cache"`
@@ -46,6 +49,8 @@ func Load() (Config, error) {
 	if len(cfg.Hosts) == 0 {
 		cfg.Hosts = hostsFromOldVar()
 	}
+	cfg.GitHubBoards = boardNames(cfg.GitHubBoards)
+	cfg.AzureBoards = boardNames(cfg.AzureBoards)
 	return cfg, cfg.validate()
 }
 
@@ -53,6 +58,8 @@ type DesktopDefaults struct {
 	GitHubClientID string
 	GitHubAppSlug  string
 	AzureClientID  string
+	GitHubBoards   string
+	AzureBoards    string
 	CacheDir       string
 }
 
@@ -64,6 +71,11 @@ func LoadDesktop(defaults DesktopDefaults) (Config, error) {
 	cfg.GitHubClientID = cmp.Or(cfg.GitHubClientID, defaults.GitHubClientID)
 	cfg.GitHubAppSlug = cmp.Or(cfg.GitHubAppSlug, defaults.GitHubAppSlug)
 	cfg.AzureClientID = cmp.Or(cfg.AzureClientID, defaults.AzureClientID)
+	cfg.GitHubBoards = boardNames(strings.Split(cmp.Or(strings.Join(cfg.GitHubBoards, ","), defaults.GitHubBoards), ","))
+	cfg.AzureBoards = boardNames(strings.Split(cmp.Or(strings.Join(cfg.AzureBoards, ","), defaults.AzureBoards), ","))
+	if err := cfg.validateBoards(); err != nil {
+		return Config{}, err
+	}
 	if _, set := os.LookupEnv("FUDA_CACHE_DIR"); !set {
 		cfg.CacheDir = defaults.CacheDir
 	}
@@ -76,6 +88,16 @@ func LoadDesktop(defaults DesktopDefaults) (Config, error) {
 	}
 	cfg.LocalWrites = true
 	return cfg, nil
+}
+
+func boardNames(raw []string) []string {
+	var names []string
+	for _, name := range raw {
+		if name = strings.TrimSpace(name); name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 func hostsFromOldVar() []board.Host {
@@ -110,7 +132,28 @@ func (c Config) Has(host board.Host) bool {
 	return slices.Contains(c.Hosts, host)
 }
 
+func (c Config) validateBoards() error {
+	if err := checkParts("FUDA_GITHUB_BOARDS", c.GitHubBoards, "owner/repo"); err != nil {
+		return err
+	}
+	return checkParts("FUDA_AZURE_BOARDS", c.AzureBoards, "org/project/repo")
+}
+
+func checkParts(setting string, names []string, form string) error {
+	want := strings.Count(form, "/") + 1
+	for _, name := range names {
+		parts := strings.Split(name, "/")
+		if len(parts) != want || slices.Contains(parts, "") {
+			return fmt.Errorf("%s: %q is not %s", setting, name, form)
+		}
+	}
+	return nil
+}
+
 func (c Config) validate() error {
+	if err := c.validateBoards(); err != nil {
+		return err
+	}
 	if c.Has(board.HostLocal) && len(c.Hosts) > 1 {
 		return fmt.Errorf("FUDA_HOSTS=local cannot be combined with other hosts")
 	}

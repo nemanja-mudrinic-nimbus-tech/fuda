@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -11,12 +12,16 @@ import (
 
 const boardPrefix = "fuda-"
 
-func ListBoards(ctx context.Context) ([]string, error) {
+func ListBoards(ctx context.Context, listed []string) ([]string, error) {
 	source := &Source{base: apiBase, client: &http.Client{Timeout: 60 * time.Second}}
-	return source.listBoards(ctx)
+	return source.listBoards(ctx, listed)
 }
 
-func (s *Source) listBoards(ctx context.Context) ([]string, error) {
+func isBoard(name, fullName string, listed []string) bool {
+	return strings.HasPrefix(name, boardPrefix) || slices.ContainsFunc(listed, func(l string) bool { return strings.EqualFold(l, fullName) })
+}
+
+func (s *Source) listBoards(ctx context.Context, listed []string) ([]string, error) {
 	const perPage = 100
 	var names []string
 	for page := 1; ; page++ {
@@ -33,7 +38,7 @@ func (s *Source) listBoards(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 		for _, r := range repos {
-			if strings.HasPrefix(r.Name, boardPrefix) {
+			if isBoard(r.Name, r.FullName, listed) {
 				names = append(names, r.FullName)
 			}
 		}

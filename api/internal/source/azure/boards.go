@@ -3,15 +3,20 @@ package azure
 import (
 	"context"
 	"net/url"
+	"slices"
 	"strings"
 )
 
-func ListBoards(ctx context.Context) ([]string, error) {
+func ListBoards(ctx context.Context, listed []string) ([]string, error) {
 	source := New(Repo{}, "")
-	return source.listBoards(ctx)
+	return source.listBoards(ctx, listed)
 }
 
-func (s *Source) listBoards(ctx context.Context) ([]string, error) {
+func isBoard(name, fullName string, listed []string) bool {
+	return strings.HasPrefix(name, boardPrefix) || slices.ContainsFunc(listed, func(l string) bool { return strings.EqualFold(l, fullName) })
+}
+
+func (s *Source) listBoards(ctx context.Context, listed []string) ([]string, error) {
 	var profile struct {
 		ID string `json:"id"`
 	}
@@ -42,8 +47,9 @@ func (s *Source) listBoards(ctx context.Context) ([]string, error) {
 			continue
 		}
 		for _, repo := range repos.Value {
-			if strings.HasPrefix(repo.Name, boardPrefix) {
-				names = append(names, account.Name+"/"+repo.Project.Name+"/"+repo.Name)
+			fullName := account.Name + "/" + repo.Project.Name + "/" + repo.Name
+			if isBoard(repo.Name, fullName, listed) {
+				names = append(names, fullName)
 			}
 		}
 	}
