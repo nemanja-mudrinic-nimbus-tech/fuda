@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2Icon } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
@@ -6,8 +7,8 @@ import { RichContent } from '@/components/molecules/RichContent'
 import { TaskLink } from '@/components/atoms/TaskLink'
 import { DocTree } from '@/components/organisms/DocTree'
 import { Button } from '@/components/ui/button'
-import { ApiError, api, type DocSource } from '@/lib/api'
-import { useBoard, useDoc, useDocList } from '@/lib/queries'
+import { ApiError, type DocSource } from '@/lib/api'
+import { docSourceQuery, useBoard, useDoc, useDocList } from '@/lib/queries'
 
 const loadEditor = () => import('@/components/organisms/DocEditor')
 const DocEditor = lazy(loadEditor)
@@ -22,6 +23,7 @@ function DocPage() {
   const { _splat: requested = '' } = Route.useParams()
   const { data: paths } = useDocList()
   const { data: board } = useBoard()
+  const client = useQueryClient()
   const path = requested || (paths?.includes(defaultDoc) ? defaultDoc : '')
   const { data: doc, error, isPending } = useDoc(path)
   const [editing, setEditing] = useState<{ path: string; source: DocSource } | null>(null)
@@ -29,10 +31,15 @@ function DocPage() {
   if (editing && editing.path !== path) setEditing(null)
   const editor = editing?.path === path ? editing.source : undefined
 
+  const warmEditor = () => {
+    void client.prefetchQuery(docSourceQuery(path))
+    loadEditor().catch(() => undefined)
+  }
+
   const startEditing = async () => {
     setLoadingSource(true)
     try {
-      const [source] = await Promise.all([api.docSource(path), loadEditor()])
+      const [source] = await Promise.all([client.fetchQuery(docSourceQuery(path)), loadEditor()])
       setEditing({ path, source })
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : 'The doc could not be opened for editing')
@@ -52,7 +59,14 @@ function DocPage() {
                 docs/{path}
               </p>
               {doc && board?.readOnly === false && (
-                <Button variant="outline" size="sm" onClick={startEditing} disabled={loadingSource}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={startEditing}
+                  onMouseEnter={warmEditor}
+                  onFocus={warmEditor}
+                  disabled={loadingSource}
+                >
                   {loadingSource && <Loader2Icon className="animate-spin" />}
                   Edit
                 </Button>

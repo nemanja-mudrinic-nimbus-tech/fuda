@@ -20,6 +20,7 @@ export const keys = {
   archive: ['archive'] as const,
   docList: ['docList'] as const,
   doc: (path: string) => ['doc', path] as const,
+  docSource: (path: string) => ['docSource', path] as const,
   guide: ['guide'] as const,
   guidePage: (slug: string) => ['guide', slug] as const,
   version: ['version'] as const,
@@ -148,6 +149,12 @@ export function useDocList() {
 
 export function useDoc(path: string) {
   return useQuery({ queryKey: keys.doc(path), queryFn: () => api.doc(path), enabled: path !== '' })
+}
+
+// The editor's source is cached briefly so a hover can fetch it ahead of the click. A save still
+// checks the version on the server, so an older copy fails with a conflict instead of overwriting.
+export function docSourceQuery(path: string) {
+  return { queryKey: keys.docSource(path), queryFn: () => api.docSource(path), staleTime: 30_000 }
 }
 
 export function useSaveDoc() {
