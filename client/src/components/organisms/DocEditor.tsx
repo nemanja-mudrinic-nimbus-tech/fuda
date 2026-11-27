@@ -1,5 +1,6 @@
 import MDEditor from '@uiw/react-md-editor/nohighlight'
 import '@uiw/react-md-editor/markdown-editor.css'
+import { Loader2Icon } from 'lucide-react'
 import { useBlocker } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,7 @@ export default function DocEditor({
             Cancel
           </Button>
           <Button size="sm" onClick={submit} disabled={!dirty || save.isPending}>
+            {save.isPending && <Loader2Icon className="animate-spin" />}
             {save.isPending ? 'Saving…' : 'Save'}
           </Button>
         </div>
@@ -71,6 +73,7 @@ export default function DocEditor({
             onChange={(value) => setDraft(value ?? '')}
             height="100%"
             visibleDragbar={false}
+            textareaProps={{ readOnly: save.isPending }}
           />
         </div>
       </div>
