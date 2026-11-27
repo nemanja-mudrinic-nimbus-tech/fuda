@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Loader2Icon } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { toast } from 'sonner'
+import { NoDocSelected } from '@/components/molecules/NoDocSelected'
 import { RichContent } from '@/components/molecules/RichContent'
 import { TaskLink } from '@/components/atoms/TaskLink'
 import { DocTree } from '@/components/organisms/DocTree'
@@ -55,8 +56,12 @@ function DocPage() {
   return (
     <div className="flex min-h-0 flex-1">
       <DocTree paths={paths ?? []} openPath={path} />
-      <main className={editor ? 'flex flex-1 flex-col overflow-hidden' : 'flex-1 overflow-y-auto'}>
-        <div className={editor ? 'flex min-h-0 w-full flex-1 flex-col' : undefined}>
+      <main
+        className={
+          editor ? 'flex flex-1 flex-col overflow-hidden' : 'flex flex-1 flex-col overflow-y-auto'
+        }
+      >
+        <div className="flex min-h-0 w-full flex-1 flex-col">
           {path !== '' && !editor && (
             <div className="sticky top-0 z-10 flex min-h-12 items-center justify-between gap-2 border-b border-border bg-page px-4 py-2">
               <p className="min-w-0 truncate font-mono text-xs text-muted-foreground">
@@ -83,8 +88,8 @@ function DocPage() {
             </Suspense>
           )}
           {!editor && (
-            <div className="mx-auto max-w-3xl p-6">
-              {path === '' && paths && <p className="text-sm text-muted-foreground">Pick a doc</p>}
+            <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col p-6">
+              {path === '' && paths && <NoDocSelected />}
               {path !== '' && isPending && !error && (
                 <Loader2Icon
                   aria-label="Loading doc"
