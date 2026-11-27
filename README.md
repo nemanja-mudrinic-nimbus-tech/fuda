@@ -51,9 +51,7 @@ Download the DMG from the latest GitHub Release: `arm64` for Apple Silicon, `amd
 you type it. Azure DevOps works the same way, and you can be logged in to both. Each login token stays in your
 OS keychain, and you can log out of one host or of all from the account menu in the top bar. The app checks for new releases and opens the download page when there is one.
 
-The DMG is ad-hoc signed, not notarized, so macOS may say "fuda is damaged". Drag fuda to Applications, then run
-`xattr -dr com.apple.quarantine /Applications/fuda.app`. Or open it once, let macOS refuse, and choose Open Anyway in
-System Settings → Privacy & Security.
+The DMG is ad-hoc signed, not notarized, so macOS blocks it the first time. See [Install on macOS](INSTALL.md) for the steps, with screenshots.
 
 To publish a new version, see [How to release](HOW-TO-RELEASE.md).
 
