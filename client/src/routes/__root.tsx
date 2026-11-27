@@ -9,7 +9,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useTheme } from '@/hooks/useTheme'
 import { ApiError } from '@/lib/api'
 import { installUrl } from '@/lib/hosts'
-import { useBoard, useBoardListing } from '@/lib/queries'
+import { useBoard, useBoardListing, useVersion } from '@/lib/queries'
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootLayout,
@@ -17,6 +17,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootLayout() {
   const { data, error } = useBoard()
+  const version = useVersion().data?.version
   const install = installUrl(useBoardListing().data)
   const { resolved } = useTheme()
   const client = useQueryClient()
@@ -68,6 +69,11 @@ function RootLayout() {
           </p>
         ) : (
           <Outlet />
+        )}
+        {version && (
+          <footer className="shrink-0 px-4 py-1 text-right text-xs text-muted-foreground">
+            fuda {version}
+          </footer>
         )}
       </div>
       <Toaster theme={resolved} position="bottom-right" richColors closeButton />

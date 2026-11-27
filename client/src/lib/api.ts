@@ -119,6 +119,8 @@ export type GuidePage = { slug: string; title: string }
 
 export type GuideContent = GuidePage & { html: string }
 
+export type VersionData = { version: string; boardFormat: string }
+
 export class ApiError extends Error {
   readonly status: number
   readonly code?: string
@@ -182,6 +184,7 @@ export const api = {
       { redirectToLogin: false },
     ),
   sync: () => request<void>(`${scoped}/sync`, { method: 'POST' }),
+  version: () => request<VersionData>('/api/version'),
   guide: () => request<GuidePage[]>('/api/guide'),
   guidePage: (slug: string) => request<GuideContent>(`/api/guide/${encodeURIComponent(slug)}`),
 }

@@ -13,13 +13,14 @@ ARCH ?= $(shell go env GOARCH)
 DESKTOP_IDS := $(ENV) github_id="$(GITHUB_CLIENT_ID)"; github_slug="$(GITHUB_APP_SLUG)"; azure_id="$(AZURE_CLIENT_ID)"; \
 	github_boards="$(GITHUB_BOARDS)"; azure_boards="$(AZURE_BOARDS)"; \
 	[ -n "$${github_id:-$$FUDA_GITHUB_CLIENT_ID}" ] && [ -n "$${github_slug:-$$FUDA_GITHUB_APP_SLUG}" ] || { echo "The desktop build needs GITHUB_CLIENT_ID and GITHUB_APP_SLUG (or FUDA_GITHUB_CLIENT_ID and FUDA_GITHUB_APP_SLUG in the env file)"; exit 1; };
-DESKTOP_LDFLAGS := -X main.version=$(VERSION) -X main.githubClientID=$${github_id:-$$FUDA_GITHUB_CLIENT_ID} -X main.githubAppSlug=$${github_slug:-$$FUDA_GITHUB_APP_SLUG} -X main.azureClientID=$${azure_id:-$$FUDA_AZURE_CLIENT_ID} -X 'main.githubBoards=$${github_boards:-$$FUDA_GITHUB_BOARDS}' -X 'main.azureBoards=$${azure_boards:-$$FUDA_AZURE_BOARDS}'
+SERVER_LDFLAGS := -X fuda/internal/version.Fuda=$(VERSION)
+DESKTOP_LDFLAGS := $(SERVER_LDFLAGS) -X main.githubClientID=$${github_id:-$$FUDA_GITHUB_CLIENT_ID} -X main.githubAppSlug=$${github_slug:-$$FUDA_GITHUB_APP_SLUG} -X main.azureClientID=$${azure_id:-$$FUDA_AZURE_CLIENT_ID} -X 'main.githubBoards=$${github_boards:-$$FUDA_GITHUB_BOARDS}' -X 'main.azureBoards=$${azure_boards:-$$FUDA_AZURE_BOARDS}'
 
 dev:
 	$(MAKE) -j2 dev-api dev-client
 
 dev-api:
-	go -C api build -o ../bin/fuda ./cmd/fuda
+	go -C api build -ldflags="$(SERVER_LDFLAGS)" -o ../bin/fuda ./cmd/fuda
 	$(ENV) ./bin/fuda
 
 dev-client: client/node_modules
@@ -44,7 +45,7 @@ client: client/node_modules
 	pnpm -C client build
 
 build: client
-	go -C api build -o ../bin/fuda ./cmd/fuda
+	go -C api build -ldflags="$(SERVER_LDFLAGS)" -o ../bin/fuda ./cmd/fuda
 
 desktop: desktop-macos desktop-windows
 
@@ -72,7 +73,7 @@ desktop-windows: client
 		go -C api build -trimpath -ldflags="-s -w -H=windowsgui $(DESKTOP_LDFLAGS)" -o ../bin/fuda-desktop.exe ./cmd/fuda-desktop
 
 docker:
-	docker build -t fuda .
+	docker build --build-arg VERSION=$(VERSION) -t fuda:$(VERSION) -t fuda:latest .
 
 clean:
 	rm -rf bin .fuda-cache

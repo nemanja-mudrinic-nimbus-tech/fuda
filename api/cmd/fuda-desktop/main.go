@@ -20,7 +20,6 @@ import (
 )
 
 var (
-	version        = "dev"
 	githubClientID = ""
 	githubAppSlug  = ""
 	azureClientID  = ""

@@ -28,7 +28,7 @@ git push origin v0.2.1
 - `X.Y.Z` is a stable release and must be tagged on a commit that is on `main`; the workflow fails
   otherwise. `X.Y.Z-rc.N` (any `-suffix`) is a prerelease: any commit may be tagged, and the in-app
   update check does not offer it. Any other tag fails the workflow.
-- The version goes into the binary (`main.version`) and into `Info.plist` (`CFBundleVersion`,
+- The version goes into the binary (`fuda/internal/version.Fuda`) and into `Info.plist` (`CFBundleVersion`,
   `CFBundleShortVersionString`). The Makefile reads `VERSION`, so local builds carry it too;
   `VERSION=x` on the `make` line overrides it.
 - The workflow first runs `make check` (the `ci` workflow), for prereleases too; nothing is created

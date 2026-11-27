@@ -9,6 +9,8 @@ import (
 
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"fuda/internal/version"
 )
 
 const releasesRepo = "nemanja-mudrinic-nimbus-tech/fuda"
@@ -25,7 +27,7 @@ func checkForUpdates(desktop *application.App, log *slog.Logger, userRequested b
 			desktop.Dialog.Warning().SetTitle("fuda").SetMessage("Could not check for updates. Are you online?").Show()
 		}
 		return
-	case !found || !isNewerThan(latest.GetTagName(), version):
+	case !found || !isNewerThan(latest.GetTagName(), version.Fuda):
 		if userRequested {
 			desktop.Dialog.Info().SetTitle("fuda").SetMessage("You have the newest version.").Show()
 		}
@@ -33,7 +35,7 @@ func checkForUpdates(desktop *application.App, log *slog.Logger, userRequested b
 	}
 
 	question := desktop.Dialog.Question().SetTitle("fuda").
-		SetMessage(fmt.Sprintf("fuda %s is ready. You have %s. Open the download page?", strings.TrimPrefix(latest.GetTagName(), "v"), version))
+		SetMessage(fmt.Sprintf("fuda %s is ready. You have %s. Open the download page?", strings.TrimPrefix(latest.GetTagName(), "v"), version.Fuda))
 	question.AddButton("Open page").OnClick(func() {
 		if err := desktop.Browser.OpenURL(latest.GetURL()); err != nil {
 			log.Error("open the release page", "error", err)

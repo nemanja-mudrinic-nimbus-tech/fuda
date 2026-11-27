@@ -117,7 +117,7 @@ Set `FUDA_GITHUB_CLIENT_ID` (a GitHub App with "Enable Device Flow" on) and run 
 build it in with `make desktop-macos`. The build reads `FUDA_GITHUB_CLIENT_ID`, `FUDA_GITHUB_APP_SLUG` and `FUDA_AZURE_CLIENT_ID` from your local env file (the one `make dev` loads). `GITHUB_CLIENT_ID=<id>`, `GITHUB_APP_SLUG=<slug>` or `AZURE_CLIENT_ID=<id>` on the `make` line wins. The GitHub id and slug are required: the build fails without them. The Azure id is optional. The build also reads the optional board lists `FUDA_GITHUB_BOARDS` and `FUDA_AZURE_BOARDS` from the env file (`GITHUB_BOARDS=` and `AZURE_BOARDS=` on the `make` line win); a value in the environment at run time wins over the built-in one. The App needs "Expire user
 authorization tokens" off: there is no client secret, so fuda cannot refresh a token.
 
-To release, see [How to release](HOW-TO-RELEASE.md).
+To release, bump `VERSION` in a pull request, then push the matching tag: see [How to release](HOW-TO-RELEASE.md).
 
 ### Desktop icon
 

@@ -11,6 +11,7 @@ import (
 
 	"fuda/internal/board"
 	"fuda/internal/guide"
+	"fuda/internal/version"
 )
 
 type api struct {
@@ -55,6 +56,7 @@ func (a api) routes(mux *http.ServeMux) {
 		}
 	}
 	mux.HandleFunc("GET /api/boards", a.boardList)
+	mux.HandleFunc("GET /api/version", a.version)
 	mux.HandleFunc("GET /api/guide", a.guideList)
 	mux.HandleFunc("GET /api/guide/{slug}", a.guidePage)
 }
@@ -255,6 +257,10 @@ func (a api) file(w http.ResponseWriter, r *http.Request, service *board.Service
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
 	w.Header().Set("Cache-Control", "private, max-age=300")
 	_, _ = w.Write(content)
+}
+
+func (a api) version(w http.ResponseWriter, _ *http.Request) {
+	a.json(w, http.StatusOK, map[string]string{"version": version.Fuda, "boardFormat": version.BoardFormat})
 }
 
 func (a api) guideList(w http.ResponseWriter, _ *http.Request) {
