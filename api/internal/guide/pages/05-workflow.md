@@ -5,9 +5,9 @@ reviews) in `WORKFLOW.md`.
 
 | Step | Change in the task file | Where |
 |---|---|---|
-| Add | A new file, `status: "backlog"`, `added` = today | A small commit on `main` of the tickets repo |
+| Add | A new file, `status: "backlog"`, `added` = today | A small commit on `main` of the board repository |
 | Claim | `owner`, `status: "in progress"`, `claimed` = today. Already owned: pick another task | A small commit on `main`, **before** branching in the code repo |
-| Deliver | `status: "merged"`, the PR number in `pr`, an `## Evidence` section | A small commit on `main` once the code pull request merges. While a pull request whose title or branch names the task is open, the card shows In review |
+| Deliver | `status: "merged"`, the PR number in `pr`, an `## Evidence` section | A small commit on `main` of the board repository once the code pull request merges. While a pull request whose title or branch names the task is open, the card shows In review |
 | Retest | `status: "testing"` (and `tester`), then `"validated"`; on failure back to `"in progress"` with what failed | Small commits on `main` |
 | Blocked | Set or clear `blocked_by` | A small commit |
 | Abandon | `status: "backlog"`, clear `owner` and `claimed`, the reason in `## Evidence` | A small commit |
@@ -31,12 +31,14 @@ column.
 
 Small commits touch only `docs/board/`. fuda pushes moves and owner changes straight to `main`, so
 `main` must allow it. When a branch rule refuses the push, the move fails with a message saying `main`
-is protected: give the people who move tasks permission to push to it.
+is protected. In a tickets repository, give the people who move tasks permission to push to it. In a
+code repository the message says to change the task in a pull request instead, with the status edit
+in the file.
 
 ## CI/CD
 
-Task commits go to the tickets repository, which usually builds nothing. If a code repository still
-has a `docs/board/` folder (for example a submodule pointer), skip builds when every changed file is
+Task commits go to the board repository. If it is a tickets repository, it usually builds nothing. If a
+code repository keeps its board in `docs/board/`, skip builds when every changed file is
 under it:
 
 ```yaml

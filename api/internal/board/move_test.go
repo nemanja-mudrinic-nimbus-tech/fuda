@@ -20,6 +20,7 @@ type fakeHost struct {
 	login       string
 	readOnly    bool
 	beforeWrite func(h *fakeHost)
+	protected   bool
 }
 
 func newFakeHost(files map[string]string) *fakeHost {
@@ -65,6 +66,9 @@ func (h *fakeHost) WriteFile(_ context.Context, _, path string, content []byte, 
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	if h.protected {
+		return ErrProtectedBranch
+	}
 	if version != fmt.Sprint(h.versions[path]) {
 		return ErrStale
 	}
@@ -380,4 +384,32 @@ func TestWriteAccessIsKeptForAMinutePerToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	check(t, "checks after a minute", host.calls, 3)
+}
+
+func TestProtectedMainHintDependsOnWhereTheBoardLives(t *testing.T) {
+	tests := []struct {
+		name       string
+		inCodeRepo bool
+		want       error
+	}{
+		{"tasks repository", false, ErrProtectedBranch},
+		{"board inside a code repository", true, ErrProtectedCodeRepoBranch},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			host := newFakeHost(map[string]string{taskPath: taskContent("backlog", "")})
+			host.protected = true
+			s := NewService(host, Options{DocsRoot: "docs", BoardDir: "docs/board", WorkBranch: "main", InCodeRepo: tt.inCodeRepo})
+			if err := s.Poll(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			err := s.Move(context.Background(), MoveRequest{TaskID: "T-1", FromStatus: "backlog", ToColumn: "in-progress"})
+			if !errors.Is(err, ErrProtectedBranch) {
+				t.Errorf("%v is not an ErrProtectedBranch", err)
+			}
+			if err.Error() != tt.want.Error() {
+				t.Errorf("got %q, want %q", err, tt.want)
+			}
+		})
+	}
 }

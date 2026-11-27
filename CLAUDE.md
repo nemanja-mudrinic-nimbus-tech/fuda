@@ -1,6 +1,6 @@
 # fuda
 
-A kanban board and doc reader over a board repository's markdown task files (`tasks/*.md` on `main`). It
+A kanban board and doc reader over a board repository's markdown task files (`docs/board/tasks/*.md` on `main`). It
 writes two things back, a Move (`status`) and an Assign (`owner`), as commits with the user's own
 token. One Go core serves the API and the embedded React app, as a web server and a desktop app.
 
@@ -13,10 +13,13 @@ token. One Go core serves the API and the embedded React app, as a web server an
   (hosts and local folders to Boards), `markdown`, `httpapi`, `web` (embedded SPA), `guide`
   (embedded Guide pages).
 - `client/` — Vite + React + TypeScript app. Builds into `api/internal/web/dist`; never contains Go.
-- `.scratch/<feature>/issues/` — this repo's own tickets. See `docs/agents/issue-tracker.md`.
-- `docs/` — `architecture.md` (how it works, with diagrams), `decisions.md` (why, plus TBD items
-  with proposals) and `adr/` (one decision each). `CONTEXT.md` at the root is the glossary: the domain words and where
-  they live in the code. Read them before structural changes. `CONTRIBUTING.md` — setup, rules, PRs.
+- Tickets, architecture, decisions, ADRs, glossary: not in this repo. They live in the fuda board
+  repository `nimbus-tech-io/fuda-tickets` (tickets in `docs/board/tasks/`, the rest in `docs/`:
+  `architecture.md` (how it works, with diagrams), `decisions.md` (why, plus TBD items with
+  proposals), `adr/` (one decision each), `glossary.md` (the domain words and where they live in the
+  code), `retro/`, `agents/`). Its checkout is the `fuda board:` line in `CLAUDE.local.md`
+  (gitignored); no line: ask the human for the path. Read the docs there before structural
+  changes. `CONTRIBUTING.md` — setup, rules, PRs.
 
 ## Commands
 
@@ -33,8 +36,9 @@ token. One Go core serves the API and the embedded React app, as a web server an
 - Repo content never breaks fuda: invalid files become Problems, a failed sync keeps the last snapshot.
 - The Makefile uses only `go`, `pnpm` and `docker`. The macOS targets also use `codesign` and `hdiutil`,
   which ship with macOS and the Xcode Command Line Tools.
-- Update docs (README, Guide pages, `docs/architecture.md`, `docs/decisions.md`) in the same change
-  as the behaviour they describe. `docs/` states only what is true in the code; decided-but-unbuilt
+- Update docs in the same work as the behaviour they describe: README and Guide pages in the code
+  PR here, `<fuda board>/docs/architecture.md` and `decisions.md` as a commit in the fuda board
+  repository. `docs/` there states only what is true in the code; decided-but-unbuilt
   items go under TBD in `decisions.md`, with a proposal.
 
 ## Personal overrides
@@ -48,12 +52,12 @@ top of these rules. It is gitignored.
 
 ### Issue tracker
 
-Issues live as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+Tickets live on the fuda board `nimbus-tech-io/fuda-tickets`. Your checkout's path is the `fuda board:` line in `CLAUDE.local.md`; follow `<board>/docs/agents/issue-tracker.md` for every ticket operation. Put the task id in the branch name and the pull request title.
 
 ### Triage labels
 
-The five default labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+The five triage roles are statuses with the same names. See the issue tracker doc.
 
 ### Domain docs
 
-Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: the glossary is `<board>/docs/glossary.md` and the ADRs are in `<board>/docs/adr/`. See `<board>/docs/agents/domain.md`.

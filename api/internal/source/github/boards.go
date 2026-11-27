@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-const boardPrefix = "fuda-"
+	"fuda/internal/board"
+)
 
 func ListBoards(ctx context.Context, listed []string) ([]string, error) {
 	source := &Source{base: apiBase, client: &http.Client{Timeout: 60 * time.Second}}
@@ -18,7 +18,7 @@ func ListBoards(ctx context.Context, listed []string) ([]string, error) {
 }
 
 func isBoard(name, fullName string, listed []string) bool {
-	return strings.HasPrefix(name, boardPrefix) || slices.ContainsFunc(listed, func(l string) bool { return strings.EqualFold(l, fullName) })
+	return strings.HasPrefix(name, board.BoardPrefix) || slices.ContainsFunc(listed, func(l string) bool { return strings.EqualFold(l, fullName) })
 }
 
 func (s *Source) listBoards(ctx context.Context, listed []string) ([]string, error) {

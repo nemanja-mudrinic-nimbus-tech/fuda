@@ -1,15 +1,24 @@
 # Agent guide
 
-Copy the block below into `.claude/skills/fuda-tasks/SKILL.md` (or an `AGENTS.md` section), and
-add this pointer to your `CLAUDE.md`:
+Where the tasks live decides which block you copy.
+
+**Tasks in a tickets repository.** Copy the skill below into `.claude/skills/fuda-tasks/SKILL.md`
+(or an `AGENTS.md` section) of the tickets repository, and add this pointer to each code
+repository's `CLAUDE.md`:
 
 ```markdown
 ## Tasks
-Work is tracked as task files in `docs/board/tasks/` (rules: `docs/board/TASKS.md`; columns,
+Work is tracked as task files in `docs/board/tasks/` of the tickets repository (rules: `docs/board/TASKS.md`; columns,
 labels and people: `docs/board/stages.md`, `labels.md`, `people.md`). Before starting work, find
 or create its task and claim it on `main` of the tickets repository. After the PR that delivers it
 merges, set `status: "merged"` and its PR number there. Follow the `fuda-tasks` skill for every task change.
 ```
+
+**Tasks in the code repository itself.** The tasks are in the repository's own `docs/board/tasks/`.
+Copy the skill into the repository's `.claude/skills/fuda-tasks/SKILL.md` and read "the tickets
+repository" in it as this repository. A task change is an ordinary commit. When `main` is protected,
+it goes in a pull request, and fuda's Move and Assign fail with a hint to change the task in a pull
+request.
 
 ## The skill
 
@@ -118,17 +127,19 @@ place of `<PREFIX>`. It is the one copy: code repositories point to it.
 ````markdown
 # Issue tracker: fuda board
 
-Tickets, specs and wayfinder maps live as task files in the board repository `fuda-<project>`, on
+Tickets, specs and wayfinder maps live as task files in the board repository (`fuda-<project>`, or a code repository's `docs/board/`), on
 `main`. fuda shows them as a board. The task file format is in fuda's Guide (Task format); the
 delivery lifecycle (claim, merged, testing, done, archive) and the commit messages are in the
 `fuda-tasks` skill and `docs/board/TASKS.md`. This doc maps the issue-tracker operations onto them.
 
 ## The board checkout
 
-`<board>` below is the developer's own checkout of `fuda-<project>`:
+`<board>` below is the developer's own checkout of the board repository (`fuda-<project>`, or the
+code repository that holds `docs/board/`):
 
-- In a code repository, its path is the `fuda board:` line in `CLAUDE.local.md`. No such line: ask
-  the human for the path and offer to add it. Task files are written only in `<board>`.
+- In a code repository whose tickets are in another repository, `<board>` is the developer's own
+  checkout of that repository: its path is the `fuda board:` line in `CLAUDE.local.md`. No such
+  line: ask the human for the path and offer to add it. Task files are written only in `<board>`.
 - In the board repository itself, `<board>` is the repository root.
 
 Every operation starts with `git -C <board> pull --rebase` and ends with a commit pushed to `main`

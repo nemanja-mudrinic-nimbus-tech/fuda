@@ -37,7 +37,6 @@ func ParseRepo(id string) (Repo, bool) {
 const (
 	hostBase     = "https://dev.azure.com"
 	accountsBase = "https://app.vssps.visualstudio.com"
-	boardPrefix  = "fuda-"
 )
 
 func (r Repo) WebURL() string {

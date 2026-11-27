@@ -20,6 +20,8 @@ const (
 	HostLocal  Host = "local"
 )
 
+const BoardPrefix = "fuda-"
+
 type ID struct {
 	Host Host
 	Repo string

@@ -2,7 +2,7 @@
 
 A kanban board and doc reader for teams that keep their tasks as markdown files in git.
 
-A board is its own tickets repository, named `fuda-<project>` (the prefix is required), with its tasks on `main`. Each task is one file in `docs/board/tasks/` with YAML frontmatter (`status`, `owner`, `labels`, …).
+A board is the `docs/board/` folder on `main` of a repository, and you choose which: a tickets repository of its own, named `fuda-<project>`, or a code repository that you list in `FUDA_GITHUB_BOARDS`. Each task is one file in `docs/board/tasks/` with YAML frontmatter (`status`, `owner`, `labels`, …).
 fuda reads them from GitHub, Azure DevOps (log in with your Microsoft account) or a local checkout, and shows them as a board with filters,
 a task reader and the repo's docs. People (and their AI agents) move tasks with ordinary commits.
 On GitHub a person can also drag a card to another Stage: fuda commits that one `status` change as
@@ -15,10 +15,11 @@ the logged-in user, and pick a Task's Owners from the people in `people.md`, sto
 - **Using fuda on your repository:** the Guide inside the app, or
   [`api/internal/guide/pages`](api/internal/guide/pages): set up a repo, task format, board
   config, workflow, the agent guide, self-hosting.
-- **How it works:** [docs/architecture.md](docs/architecture.md).
-- **Why it works that way:** [docs/decisions.md](docs/decisions.md).
+- **How it works, why it works that way, the glossary and fuda's own tickets:** the fuda board repository
+  `nimbus-tech-io/fuda-tickets` (private; ask a maintainer for access): `docs/architecture.md`,
+  `docs/decisions.md`, `docs/adr/`, `docs/glossary.md`, and the tickets in `docs/board/tasks/`.
 - **Changing fuda:** [CONTRIBUTING.md](CONTRIBUTING.md).
-- **Moving `docs/board` into a `fuda-` repository:** [CONTRIBUTING.md](CONTRIBUTING.md#move-docsboard-into-a-fuda--repository).
+- **Moving `docs/board` into its own `fuda-` repository:** [CONTRIBUTING.md](CONTRIBUTING.md#move-docsboard-into-its-own-fuda--repository).
 
 ## Quick start
 

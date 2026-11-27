@@ -20,6 +20,16 @@ var ErrStale = errors.New("file changed since it was read")
 
 var ErrProtectedBranch = errors.New("main is protected; allow fuda to push to it directly")
 
+type protectedCodeRepoError struct{}
+
+func (protectedCodeRepoError) Error() string {
+	return "main is protected; change this task in a pull request"
+}
+
+func (protectedCodeRepoError) Unwrap() error { return ErrProtectedBranch }
+
+var ErrProtectedCodeRepoBranch error = protectedCodeRepoError{}
+
 var ErrNotMovable = errors.New("this task cannot be changed")
 
 type ConflictError struct{ Message string }
@@ -96,6 +106,9 @@ func (s *Service) commit(ctx context.Context, editor TaskEditor, path string, ed
 		err = editor.WriteFile(ctx, s.opts.WorkBranch, path, edited, version, message)
 		if errors.Is(err, ErrStale) {
 			continue
+		}
+		if errors.Is(err, ErrProtectedBranch) && s.opts.InCodeRepo {
+			return ErrProtectedCodeRepoBranch
 		}
 		if err != nil {
 			return err

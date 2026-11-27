@@ -42,6 +42,7 @@ type Options struct {
 	CodeURL    func(repoPath string) string
 	PRLink     string
 	Origin     Origin
+	InCodeRepo bool
 }
 
 type Origin struct {

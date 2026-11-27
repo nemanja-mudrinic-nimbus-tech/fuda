@@ -1,7 +1,8 @@
 # What fuda is
 
-fuda is a board over a tickets repository: one repository per board, named `fuda-<project>` (the
-prefix is required), with its tasks on `main`. Each task is a markdown file in `docs/board/tasks/`, and its
+fuda is a board over the `docs/board/` folder of a repository, with its tasks on `main`. The repository
+is your choice: a tickets repository of its own, named `fuda-<project>`, or a code repository that you
+list in `FUDA_GITHUB_BOARDS` or `FUDA_AZURE_BOARDS`. Each task is a markdown file in `docs/board/tasks/`, and its
 frontmatter (`status`, `owner`, `labels`, …) is its state. fuda reads those files from GitHub,
 Azure DevOps or a local checkout and shows them as a board, an insights view, an archive and a
 reader for the repository's docs, with a file tree to browse them.
@@ -21,7 +22,7 @@ about 10 seconds.
 
 ```mermaid
 flowchart LR
-  dev[Developer or agent] -- commit to main --> repo[(Tickets repository<br/>docs/board/tasks)]
+  dev[Developer or agent] -- commit to main --> repo[(Board repository<br/>docs/board/tasks)]
   repo -- read with the user's own login --> fuda[fuda]
   fuda --> board[Board · Insights · Archive · Docs]
 ```

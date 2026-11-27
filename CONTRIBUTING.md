@@ -1,8 +1,10 @@
 # Contributing
 
-Thanks for helping. fuda is small on purpose; read [docs/architecture.md](docs/architecture.md)
-for how it works and [docs/decisions.md](docs/decisions.md) for why, before larger changes.
-[CONTEXT.md](CONTEXT.md) defines the words both use.
+Thanks for helping. fuda is small on purpose; before larger changes read `docs/architecture.md` (how
+it works), `docs/decisions.md` (why) and `docs/glossary.md` (the words both use). They live in the
+fuda board repository, `nimbus-tech-io/fuda-tickets` (private; ask a maintainer for access), next to
+fuda's own tickets, ADRs and retros. Its path on your machine is the `fuda board:` line in
+`CLAUDE.local.md` (gitignored).
 
 ## Set up
 
@@ -69,14 +71,16 @@ source the same poll picks up edits to your working tree.
 
 ## Start a new Board
 
-Create a repository named `fuda-<something>` and install the fuda GitHub App on it. Push a first commit to its `main` branch: a repository without
+Where the Board lives is your choice. Either create a repository named `fuda-<something>`, or take a code
+repository and list it in `FUDA_GITHUB_BOARDS` (`FUDA_AZURE_BOARDS` on Azure DevOps), with its tasks in `docs/board/tasks/`. Install the fuda GitHub App on it.
+Push a first commit to its `main` branch: a repository without
 `main` shows an error page. Open it in fuda: with no Task files, it shows an empty Board with the default Stages and the hint "No Tasks yet: add
-files in `tasks/`". Add Task files under `docs/board/tasks/` and they appear on the next sync.
+files in `tasks/`". Add Task files under `docs/board/tasks/` and they appear on the next sync. When `main` of a code repository is protected, a Move or Assign fails with a hint to change the task in a pull request.
 
-## Move `docs/board` into a `fuda-` repository
+## Move `docs/board` into its own `fuda-` repository
 
-A Board is a `fuda-` repository that the code repository mounts as a submodule at `docs/board`.
-To move an existing `docs/board` there and keep its history:
+Optional. A code repository that keeps its Board in `docs/board/` can move it into a `fuda-` repository
+of its own and keep the history, so the code repository keeps no copy of the Tasks:
 
 1. Create an empty repository named `fuda-<something>` and install the fuda GitHub App on it.
 2. In the code repository, split the history of `docs/board` into a branch:
@@ -87,27 +91,13 @@ To move an existing `docs/board` there and keep its history:
    ```sh
    git push git@github.com:<owner>/fuda-<something>.git board-split:main
    ```
-4. Replace the folder with the submodule, tracking `main`:
+4. Remove the folder from the code repository:
    ```sh
    git rm -r docs/board
    git commit -m "Move docs/board to fuda-<something>"
-   git submodule add -b main git@github.com:<owner>/fuda-<something>.git docs/board
-   git commit -m "Add docs/board as a submodule"
    ```
-   `-b main` writes `branch = main` into `.gitmodules`.
-5. Delete the `board-split` branch. Tell the team to run `git submodule update --init`.
+5. Delete the `board-split` branch and list the code repository in the new Board's `repos.md`.
 6. Add the agent rule below to the code repository's `CLAUDE.md` or `AGENTS.md`.
-
-### Keep the submodule current
-
-A submodule points at one commit of the Board. Move it to the newest `main`:
-
-```sh
-git submodule update --remote docs/board
-```
-
-Commit the new pointer in the code repository if you want others to get it. fuda itself reads the
-`fuda-` repository, so the Board in fuda is always current.
 
 ### Agent rule
 
@@ -116,11 +106,9 @@ Copy this into the code repository's `CLAUDE.md` or `AGENTS.md`:
 ```md
 ## Tasks
 
-Tasks are the markdown files in `docs/board/tasks/`. `docs/board` is a git submodule.
-
-- Before you read Tasks, run `git submodule update --remote docs/board`.
-- Commit Task edits inside `docs/board` and push them there. Commit the new submodule pointer in
-  this repository separately.
+Tasks live in the board repository `fuda-<something>`. Your checkout's path is the `fuda board:` line
+in `CLAUDE.local.md` (gitignored). Change tasks only there, following `<board>/docs/agents/issue-tracker.md`.
+Put the task id in the branch name and the pull request title.
 ```
 
 ## Desktop app
@@ -160,8 +148,9 @@ The `rsrc_windows_*.syso` files put the icon in `fuda-desktop.exe`; Go links the
 ```
 api/      Go module: cmd/fuda (web server) and cmd/fuda-desktop (Wails app) and internal/ packages; serves the API and the built app
 client/   Vite + React + TypeScript app; builds into api/internal/web/dist
-docs/     how fuda works (architecture) and why (decisions)
 ```
+
+fuda's own tickets, architecture, decisions, ADRs and glossary are in the fuda board repository, not here.
 
 The Guide pages shown inside the app are in `api/internal/guide/pages/`: they are for people who
 use fuda on their repository, not for people changing fuda.
@@ -173,7 +162,7 @@ use fuda on their repository, not for people changing fuda.
 - **Behaviour lives in `internal/board`.** HTTP handlers parse, call the service and write.
   Interfaces are declared where they are used.
 - **No speculative abstractions.** Build what is needed now; leave the rest in
-  [docs/decisions.md § TBD](docs/decisions.md#tbd).
+  `docs/decisions.md` § TBD in the fuda board repository.
 - **Repository content never breaks fuda.** Invalid files become Problems; a failed sync keeps the
   last snapshot.
 - **Tests where the logic is.** Unit tests for parsing and rules, small fixtures in `testdata/`, no
@@ -197,8 +186,9 @@ use fuda on their repository, not for people changing fuda.
 1. Branch from `main`. One topic per PR.
 2. `make check` passes (Go lint + tests, client lint + format + types + tests). The `ci` workflow
    runs it on every PR and on every push to `main`.
-3. Docs change in the same PR as the behaviour: README, the Guide pages, `docs/architecture.md`,
-   and `docs/decisions.md` when a decision changes.
+3. Docs change in the same work as the behaviour: README and the Guide pages in the PR, and
+   `docs/architecture.md` and `docs/decisions.md` (when a decision changes) as a commit in the fuda
+   board repository.
 4. Commit messages say what changed and why, in the imperative ("Restore the last board from the
    cache at startup").
 5. A change to the client is tried in the running app (`make dev`) before the PR, not only by tests.
