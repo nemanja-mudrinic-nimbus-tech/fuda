@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BoardData, Card, Column } from './api'
-import { applyPendingMoves, canDrag, canDrop, columnStatus, moveTargets } from './moves'
+import { applyPendingMoves, canDrag, canDrop, cardStatus, columnStatus, moveTargets } from './moves'
 
 const column = (id: string, extra: Partial<Column> = {}): Column => ({
   id,
@@ -40,6 +40,17 @@ describe('applyPendingMoves', () => {
     expect(applyPendingMoves(board, [{ cardId: 'A-1', column: 'nowhere' }]).cards[0]).toBe(
       board.cards[0],
     )
+  })
+})
+
+describe('cardStatus', () => {
+  it('shows In review for an in progress task with an open PR', () => {
+    const inReview = card('A-3', { status: 'in progress', column: 'in-review' })
+    expect(cardStatus(inReview, board.columns)).toBe('in review')
+  })
+  it('keeps the file status outside a pr-open Stage', () => {
+    const doing = card('A-4', { status: 'in progress', column: 'in-progress' })
+    expect(cardStatus(doing, board.columns)).toBe('in progress')
   })
 })
 
