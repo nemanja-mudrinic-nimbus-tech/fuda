@@ -4,11 +4,11 @@ import { StatusIcon } from '@/components/atoms/StatusIcon'
 import { useBoardSearch } from '@/hooks/useBoardSearch'
 import type { Card, Column } from '@/lib/api'
 import { listOf } from '@/lib/filters'
-import { columnStatus } from '@/lib/moves'
+import { cardStatus, columnStatus } from '@/lib/moves'
 import { labelText } from '@/lib/labels'
 import { cn } from '@/lib/utils'
 
-function Row({ card }: { card: Card }) {
+function Row({ card, columns }: { card: Card; columns: Column[] }) {
   const { search, toggle, openTask } = useBoardSearch()
   const selected = listOf(search.label)
   const labels = card.labels
@@ -32,7 +32,7 @@ function Row({ card }: { card: Card }) {
           search.task === card.id && 'bg-accent',
         )}
       >
-        <StatusIcon status={card.status} className="size-3" />
+        <StatusIcon status={cardStatus(card, columns)} className="size-3" />
         <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{card.id}</span>
         <span className="min-w-0 flex-1 truncate">{card.title}</span>
         <span className="hidden shrink-0 items-center gap-1 md:flex">
@@ -79,7 +79,7 @@ export function ListView({ columns, cards }: { columns: Column[]; cards: Card[] 
               </h2>
               <ul>
                 {rows.map((card) => (
-                  <Row key={card.id} card={card} />
+                  <Row key={card.id} card={card} columns={columns} />
                 ))}
               </ul>
             </section>

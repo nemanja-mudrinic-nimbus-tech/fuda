@@ -18,7 +18,7 @@ import {
 import { useLeaveWarning } from '@/hooks/useLeaveWarning'
 import { useBoardSearch } from '@/hooks/useBoardSearch'
 import { listOf } from '@/lib/filters'
-import { moveTargets } from '@/lib/moves'
+import { cardStatus, moveTargets } from '@/lib/moves'
 import {
   useAssign,
   useBoard,
@@ -60,6 +60,7 @@ export function TaskSheet({ taskIds, prLink }: { taskIds: string[]; prLink?: str
   useLeaveWarning(!!pending)
   const owners = pending?.owners ?? task?.owners ?? []
   const card = board?.cards.find((c) => c.id === search.task)
+  const shownStatus = card ? cardStatus(card, board?.columns ?? []) : (task?.status ?? '')
   const targets = card
     ? moveTargets(card, board?.columns ?? [], movePending, board?.readOnly ?? true)
     : []
@@ -72,8 +73,8 @@ export function TaskSheet({ taskIds, prLink }: { taskIds: string[]; prLink?: str
             {search.task}
             {task && (
               <span className="inline-flex items-center gap-1 font-sans">
-                <StatusIcon status={task.status} className="size-3" />
-                {task.status}
+                <StatusIcon status={shownStatus} className="size-3" />
+                {shownStatus}
               </span>
             )}
           </SheetDescription>

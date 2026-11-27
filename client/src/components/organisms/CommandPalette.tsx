@@ -28,6 +28,7 @@ import {
 import { Kbd } from '@/components/ui/kbd'
 import { useTheme } from '@/hooks/useTheme'
 import { useBoard, useGuide, useSync } from '@/lib/queries'
+import { cardStatus } from '@/lib/moves'
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
@@ -145,12 +146,12 @@ export function CommandPalette() {
                         )
                       }
                     >
-                      <StatusIcon status={card.status} className="size-3" />
+                      <StatusIcon status={cardStatus(card, board.columns)} className="size-3" />
                       <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">
                         {card.id}
                       </span>
                       <span className="truncate">{card.title}</span>
-                      <CommandShortcut>{card.status}</CommandShortcut>
+                      <CommandShortcut>{cardStatus(card, board.columns)}</CommandShortcut>
                     </CommandItem>
                   ))}
                 </CommandGroup>

@@ -8,6 +8,7 @@ import { ResultBadge } from '@/components/molecules/ActivityTimeline'
 import { StatusIcon } from '@/components/atoms/StatusIcon'
 import { useBoardSearch } from '@/hooks/useBoardSearch'
 import { usePeople } from '@/hooks/usePeople'
+import { cardStatus } from '@/lib/moves'
 import type { Card, Column, OpenPr } from '@/lib/api'
 import { listOf } from '@/lib/filters'
 import { cn } from '@/lib/utils'
@@ -108,6 +109,7 @@ export function TaskCard({
   const ranked = rankLabels(card.labels)
   const hiddenLabels = ranked.slice(visibleLabels)
   const showStatus = column.statuses.length > 1 || column.prOpen
+  const status = cardStatus(card, [column])
 
   return (
     <div
@@ -137,8 +139,8 @@ export function TaskCard({
     >
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
         {showStatus && (
-          <Hint label={`Status: ${card.status}`}>
-            <StatusIcon status={card.status} className="size-3" />
+          <Hint label={`Status: ${status}`}>
+            <StatusIcon status={status} className="size-3" />
           </Hint>
         )}
         <span className="font-mono tracking-tight">{card.id}</span>
