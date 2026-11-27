@@ -23,7 +23,7 @@ function DocPage() {
   const { data: paths } = useDocList()
   const { data: board } = useBoard()
   const path = requested || (paths?.includes(defaultDoc) ? defaultDoc : '')
-  const { data: doc, error } = useDoc(path)
+  const { data: doc, error, isPending } = useDoc(path)
   const [editing, setEditing] = useState<{ path: string; source: DocSource } | null>(null)
   const [loadingSource, setLoadingSource] = useState(false)
   if (editing && editing.path !== path) setEditing(null)
@@ -63,6 +63,12 @@ function DocPage() {
                 </Button>
               )}
             </div>
+          )}
+          {path !== '' && isPending && !error && (
+            <Loader2Icon
+              aria-label="Loading doc"
+              className="mx-auto mt-16 animate-spin text-muted-foreground"
+            />
           )}
           {error && (
             <p className="text-sm text-muted-foreground">This doc does not exist in the repo.</p>
