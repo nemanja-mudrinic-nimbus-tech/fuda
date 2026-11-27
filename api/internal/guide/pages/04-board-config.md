@@ -4,7 +4,8 @@ Four optional files in `docs/board/`. Each is normal markdown with a YAML frontm
 the top that fuda reads; the rest of the file is for people. A missing file means fuda derives
 the same thing from the tasks. An invalid block is listed under Problems and ignored.
 
-fuda 0.2 reads Board format 0.2. A Board is the layout of these files and of the task files.
+fuda reads Board format 0.2. A Board is the layout of these files and of the task files. The Board
+format changes only when the layout does, not with every fuda release; fuda keeps reading older Boards.
 
 ## stages.md: the columns
 

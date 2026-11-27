@@ -25,15 +25,10 @@ func versionFile(t *testing.T) string {
 	return strings.TrimSpace(readRepoFile(t, "VERSION"))
 }
 
-func TestBoardFormatIsTheMajorMinorOfTheVersionFile(t *testing.T) {
+func TestVersionFileIsSemver(t *testing.T) {
 	version := versionFile(t)
 	if !regexp.MustCompile(`^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$`).MatchString(version) {
 		t.Fatalf("VERSION %q is not X.Y.Z or X.Y.Z-suffix", version)
-	}
-
-	parts := strings.SplitN(version, ".", 3)
-	if got := parts[0] + "." + parts[1]; got != BoardFormat {
-		t.Errorf("VERSION %s has Board format %s, but BoardFormat is %s", version, got, BoardFormat)
 	}
 }
 
