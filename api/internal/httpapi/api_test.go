@@ -20,6 +20,7 @@ import (
 	"fuda/internal/board"
 	"fuda/internal/login"
 	"fuda/internal/source/local"
+	"fuda/internal/version"
 )
 
 func writeRepo(t *testing.T, files map[string]string) string {
@@ -115,6 +116,17 @@ func TestAPISmoke(t *testing.T) {
 		if res.StatusCode != want {
 			t.Errorf("sync: got %d, want %d", res.StatusCode, want)
 		}
+	}
+}
+
+func TestVersionReportsFudaAndTheBoardFormat(t *testing.T) {
+	server := httptest.NewServer(NewHandler(slog.New(slog.DiscardHandler), testBoards(t, nil), fstest.MapFS{}))
+	defer server.Close()
+
+	var got struct{ Version, BoardFormat string }
+	getJSON(t, server.URL+"/api/version", http.StatusOK, &got)
+	if got.Version != version.Fuda || got.BoardFormat != version.BoardFormat {
+		t.Errorf("version: %+v", got)
 	}
 }
 

@@ -10,14 +10,17 @@ RUN mkdir -p api/internal/web/dist && cd client && pnpm build
 
 FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS api
 ARG TARGETOS TARGETARCH
+ARG VERSION
 WORKDIR /src/api
 COPY api/go.mod api/go.sum ./
 RUN go mod download
 COPY api ./
 COPY --from=client /src/api/internal/web/dist ./internal/web/dist
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/fuda ./cmd/fuda && mkdir -p /out/data
+RUN test -n "$VERSION" && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w -X fuda/internal/version.Fuda=$VERSION" -o /out/fuda ./cmd/fuda && mkdir -p /out/data
 
 FROM gcr.io/distroless/static:nonroot
+ARG VERSION
+LABEL org.opencontainers.image.version=$VERSION
 COPY --from=api /out/fuda /fuda
 COPY --from=api --chown=nonroot:nonroot /out/data /data
 USER nonroot:nonroot

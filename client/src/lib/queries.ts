@@ -22,6 +22,7 @@ export const keys = {
   doc: (path: string) => ['doc', path] as const,
   guide: ['guide'] as const,
   guidePage: (slug: string) => ['guide', slug] as const,
+  version: ['version'] as const,
 }
 
 export function useBoardListing() {
@@ -168,6 +169,10 @@ export function useSync() {
       toast.error('Sync failed', { description: error.message })
     },
   })
+}
+
+export function useVersion() {
+  return useQuery({ queryKey: keys.version, queryFn: api.version, staleTime: Infinity })
 }
 
 export function useGuide() {
