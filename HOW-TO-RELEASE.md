@@ -11,17 +11,31 @@ without them. `FUDA_GITHUB_BOARDS` and `FUDA_AZURE_BOARDS` are optional and pass
 
 ## Cut a release
 
-`main` is protected, so the version bump goes through a pull request:
+`main` is protected, so the version bump goes through a pull request. Do every step below in that one
+PR; `make check` fails if any of them is missed.
 
 ```bash
 git switch -c release-0.2.1 main
 echo 0.2.1 > VERSION
+# also set "version" in client/package.json to 0.2.1 (see the checklist below)
 git commit -am "Release 0.2.1"
 git push -u origin release-0.2.1   # open the PR and merge it
 git switch main && git pull
 git tag v0.2.1
 git push origin v0.2.1
 ```
+
+### Files to bump by hand
+
+| File | Change |
+| --- | --- |
+| `VERSION` | the new `X.Y.Z` (the tag is `v` plus this) |
+| `client/package.json` | `"version"` equal to `VERSION` (checked by `TestClientPackageCarriesTheVersionFile`) |
+
+Do **not** bump `BoardFormat` (`api/internal/version/version.go`) or the "Board format" mentions in
+`api/internal/guide/pages`. The Board format is the version of the Board file layout, like a database
+schema version: change it only when the layout changes in a way older fuda cannot read, not on every
+release. A new fuda keeps reading older Boards.
 
 - `VERSION` at the repository root is the one version. The tag must be `v` plus its contents; the
   workflow fails on a mismatch.
