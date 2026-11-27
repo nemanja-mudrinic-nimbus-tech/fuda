@@ -3,7 +3,6 @@ import '@uiw/react-md-editor/markdown-editor.css'
 import { useBlocker } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useLeaveWarning } from '@/hooks/useLeaveWarning'
 import { useTheme } from '@/hooks/useTheme'
 import { ApiError, type DocSource } from '@/lib/api'
@@ -29,7 +28,6 @@ export default function DocEditor({
   onClose: () => void
 }) {
   const [draft, setDraft] = useState(source.content)
-  const [message, setMessage] = useState(`docs: edit ${path}`)
   const save = useSaveDoc()
   const { resolved } = useTheme()
   const dirty = draft !== source.content
@@ -41,24 +39,22 @@ export default function DocEditor({
   })
 
   const submit = () =>
-    save.mutate({ path, version: source.version, content: draft, message }, { onSuccess: onClose })
+    save.mutate({ path, version: source.version, content: draft }, { onSuccess: onClose })
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <p className="shrink-0 font-mono text-xs text-muted-foreground">docs/{path}</p>
-        <Input
-          aria-label="Commit message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="h-8 flex-1"
-        />
-        <Button variant="outline" size="sm" onClick={onClose} disabled={save.isPending}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={submit} disabled={!dirty || save.isPending}>
-          {save.isPending ? 'Saving…' : 'Save'}
-        </Button>
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+          Editing: docs/{path}
+        </p>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={save.isPending}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={submit} disabled={!dirty || save.isPending}>
+            {save.isPending ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
       </div>
       {save.error && (
         <p role="alert" className="text-sm text-destructive">

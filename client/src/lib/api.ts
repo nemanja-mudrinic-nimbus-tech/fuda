@@ -117,7 +117,7 @@ export type DocDetail = { path: string; title: string; html: string; backlinks: 
 
 export type DocSource = { content: string; version: string }
 
-export type DocSave = { path: string; version: string; content: string; message: string }
+export type DocSave = { path: string; version: string; content: string }
 
 export type GuidePage = { slug: string; title: string }
 

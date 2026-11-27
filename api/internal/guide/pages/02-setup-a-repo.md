@@ -54,8 +54,7 @@ The In review column still comes from open pull requests in the code repositorie
 
 Anyone who can write to the repository sees an Edit button on a Doc in the Docs view (on a
 read-only Board there is none). It opens the Markdown source with a live preview. Save commits the
-whole file to `main` as one commit with the message in the save bar (`docs: edit <path>` by
-default); Cancel drops the draft. fuda warns before you leave a page with an unsaved draft. If
+whole file to `main` as one commit (`docs: edit <path>`); Cancel drops the draft. fuda warns before you leave a page with an unsaved draft. If
 someone else changed the Doc after you pressed Edit, Save is refused and your draft stays in the
 editor: copy it, reload and edit again. Task files, the archive and the board config files are not
 editable here, and fuda cannot create, rename or delete Docs.
