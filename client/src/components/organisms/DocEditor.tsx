@@ -44,33 +44,36 @@ export default function DocEditor({
     save.mutate({ path, version: source.version, content: draft, message }, { onSuccess: onClose })
 
   return (
-    <div className="space-y-3">
-      <div data-color-mode={resolved}>
-        <MDEditor
-          value={draft}
-          onChange={(value) => setDraft(value ?? '')}
-          height={520}
-          visibleDragbar={false}
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <p className="shrink-0 font-mono text-xs text-muted-foreground">docs/{path}</p>
+        <Input
+          aria-label="Commit message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="h-8 flex-1"
         />
+        <Button variant="outline" size="sm" onClick={onClose} disabled={save.isPending}>
+          Cancel
+        </Button>
+        <Button size="sm" onClick={submit} disabled={!dirty || save.isPending}>
+          {save.isPending ? 'Saving…' : 'Save'}
+        </Button>
       </div>
       {save.error && (
         <p role="alert" className="text-sm text-destructive">
           {failureText(save.error)}
         </p>
       )}
-      <div className="flex items-center gap-2">
-        <Input
-          aria-label="Commit message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="flex-1"
-        />
-        <Button variant="outline" onClick={onClose} disabled={save.isPending}>
-          Cancel
-        </Button>
-        <Button onClick={submit} disabled={!dirty || save.isPending}>
-          {save.isPending ? 'Saving…' : 'Save'}
-        </Button>
+      <div data-color-mode={resolved} className="relative min-h-0 flex-1">
+        <div className="absolute inset-0">
+          <MDEditor
+            value={draft}
+            onChange={(value) => setDraft(value ?? '')}
+            height="100%"
+            visibleDragbar={false}
+          />
+        </div>
       </div>
     </div>
   )
