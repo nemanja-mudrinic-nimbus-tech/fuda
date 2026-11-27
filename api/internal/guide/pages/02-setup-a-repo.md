@@ -26,7 +26,7 @@ environment.
 ```
 <board-repo>/                  a `fuda-<project>` repository, or a code repository you list; branch main
   docs/                        every markdown file here opens in the Docs reader and shows in its file tree
-                               (except tasks and the archive)
+                               (except tasks, the archive and the board config files below)
     board/
       tasks/                   required: one file per task, flat
       archive/                 tasks off the board, any status (the Archive view)

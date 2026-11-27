@@ -2,6 +2,7 @@ package board
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -23,9 +24,25 @@ func TestDocsListsMarkdownOutsideTasksAndArchive(t *testing.T) {
 	if err := s.Sync(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"architecture.md", "board/README.md", "board/stages.md", "guides/setup.md"}
+	want := []string{"architecture.md", "board/README.md", "guides/setup.md"}
 	if got := s.Docs(); !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestDocIsNotFoundForABoardConfigFile(t *testing.T) {
+	s := emptyBoardService(map[string][]byte{
+		"docs/board/stages.md": []byte("---\nstages: [backlog, done]\n---\n"),
+		"docs/board/TASKS.md":  []byte("# Rules"),
+	})
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Doc("board/stages.md"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("config file: got %v, want ErrNotFound", err)
+	}
+	if _, err := s.Doc("board/TASKS.md"); err != nil {
+		t.Errorf("TASKS.md: %v", err)
 	}
 }
 

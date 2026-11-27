@@ -11,6 +11,9 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// ConfigFiles are the Board-config file names in the Board folder.
+var ConfigFiles = []string{"stages.md", "labels.md", "people.md", "repos.md"}
+
 func parseConfig(files map[string][]byte, layout Layout, problems *[]Problem) Config {
 	var c Config
 	load := func(name string, decode func(map[string]*yaml.Node) error) {

@@ -208,7 +208,7 @@ func (s *Service) Doc(relative string) (DocView, error) {
 	}
 	repoPath := path.Clean(path.Join(s.opts.DocsRoot, relative))
 	content, ok := snap.docs[repoPath]
-	if !ok || !strings.HasPrefix(repoPath, s.opts.DocsRoot+"/") {
+	if !ok || !strings.HasPrefix(repoPath, s.opts.DocsRoot+"/") || s.isConfigFile(repoPath) {
 		return DocView{}, ErrNotFound
 	}
 	html, err := markdown.Render(content, repoPath, snap.links)
@@ -230,6 +230,10 @@ func (s *Service) Doc(relative string) (DocView, error) {
 	}, nil
 }
 
+func (s *Service) isConfigFile(repoPath string) bool {
+	return path.Dir(repoPath) == path.Clean(s.opts.BoardDir) && slices.Contains(taskfiles.ConfigFiles, path.Base(repoPath))
+}
+
 func (s *Service) Docs() []string {
 	snap := s.snapshot.Load()
 	if snap == nil {
@@ -238,7 +242,7 @@ func (s *Service) Docs() []string {
 	taskRoots := []string{path.Join(s.opts.BoardDir, "tasks") + "/", path.Join(s.opts.BoardDir, "archive") + "/"}
 	paths := []string{}
 	for repoPath := range snap.docs {
-		if slices.ContainsFunc(taskRoots, func(root string) bool { return strings.HasPrefix(repoPath, root) }) {
+		if s.isConfigFile(repoPath) || slices.ContainsFunc(taskRoots, func(root string) bool { return strings.HasPrefix(repoPath, root) }) {
 			continue
 		}
 		paths = append(paths, strings.TrimPrefix(repoPath, s.opts.DocsRoot+"/"))
