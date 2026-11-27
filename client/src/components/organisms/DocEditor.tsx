@@ -42,8 +42,8 @@ export default function DocEditor({
     save.mutate({ path, version: source.version, content: draft }, { onSuccess: onClose })
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-center justify-between gap-2 px-6 pt-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-12 items-center justify-between gap-2 px-4 py-2">
         <p className="min-w-0 truncate font-mono text-xs text-muted-foreground">
           Editing: docs/{path}
         </p>
@@ -57,13 +57,13 @@ export default function DocEditor({
         </div>
       </div>
       {save.error && (
-        <p role="alert" className="px-6 text-sm text-destructive">
+        <p role="alert" className="px-4 pb-2 text-sm text-destructive">
           {failureText(save.error)}
         </p>
       )}
       <div
         data-color-mode={resolved}
-        className="relative min-h-0 flex-1 border-t border-border [&_.w-md-editor]:rounded-none! [&_.w-md-editor]:shadow-none!"
+        className="relative min-h-0 flex-1 border-t border-border [&_.w-md-editor]:rounded-none! [&_.w-md-editor]:shadow-none! [&_.w-md-editor]:[--md-editor-background-color:transparent]! [&_.wmde-markdown]:bg-transparent!"
       >
         <div className="absolute inset-0">
           <MDEditor
