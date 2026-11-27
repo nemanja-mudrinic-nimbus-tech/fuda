@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { Ban, GitPullRequest } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Ban, Check, Copy, GitPullRequest } from 'lucide-react'
 import { LabelChip } from '@/components/atoms/LabelChip'
 import { PersonChip } from '@/components/atoms/PersonChip'
 import { StatusIcon } from '@/components/atoms/StatusIcon'
@@ -44,6 +44,32 @@ function blockedNote(text: string, ids: string[]): boolean {
   return ids.reduce((rest, id) => rest.replaceAll(id, ''), text).replace(/[\s,;]/g, '') !== ''
 }
 
+function CopyIdButton({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) {
+      return
+    }
+
+    const timer = setTimeout(() => setCopied(false), 1500)
+
+    return () => clearTimeout(timer)
+  }, [copied])
+
+  return (
+    <button
+      type="button"
+      aria-label="Copy task ID"
+      className="inline-flex items-center gap-1 rounded px-1 font-sans text-muted-foreground hover:text-foreground"
+      onClick={() => void navigator.clipboard.writeText(id).then(() => setCopied(true))}
+    >
+      {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+      {copied && 'Copied'}
+    </button>
+  )
+}
+
 function Ids({ ids }: { ids: string[] }) {
   return ids.map((id) => <TaskLink key={id} id={id} />)
 }
@@ -71,6 +97,7 @@ export function TaskSheet({ taskIds, prLink }: { taskIds: string[]; prLink?: str
         <SheetHeader className="border-b">
           <SheetDescription className="flex items-center gap-2 font-mono text-xs">
             {search.task}
+            {search.task && <CopyIdButton id={search.task} />}
             {task && (
               <span className="inline-flex items-center gap-1 font-sans">
                 <StatusIcon status={shownStatus} className="size-3" />
