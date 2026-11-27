@@ -159,6 +159,7 @@ export function docSourceQuery(path: string) {
 
 export function useSaveDoc() {
   const client = useQueryClient()
+
   return useMutation({
     mutationFn: (save: DocSave) => api.saveDoc(save),
     onSuccess: () => client.invalidateQueries(),

@@ -12,10 +12,14 @@ import { useSaveDoc } from '@/lib/queries'
 const leavePrompt = 'You have unsaved changes to this doc. Leave without saving?'
 
 function failureText(error: unknown): string {
-  if (error instanceof ApiError && error.status === 409) return error.message
+  if (error instanceof ApiError && error.status === 409) {
+    return error.message
+  }
+
   if (error instanceof ApiError && error.status === 401) {
     return 'Your login expired. Copy your changes, log in again, then reload the page.'
   }
+
   return error instanceof ApiError ? error.message : 'The doc was not saved.'
 }
 

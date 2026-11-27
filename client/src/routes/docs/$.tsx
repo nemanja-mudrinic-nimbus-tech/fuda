@@ -28,7 +28,11 @@ function DocPage() {
   const { data: doc, error, isPending } = useDoc(path)
   const [editing, setEditing] = useState<{ path: string; source: DocSource } | null>(null)
   const [loadingSource, setLoadingSource] = useState(false)
-  if (editing && editing.path !== path) setEditing(null)
+
+  if (editing && editing.path !== path) {
+    setEditing(null)
+  }
+
   const editor = editing?.path === path ? editing.source : undefined
 
   const warmEditor = () => {
