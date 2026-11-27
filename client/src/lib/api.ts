@@ -115,6 +115,10 @@ export type TaskDetail = Card & {
 
 export type DocDetail = { path: string; title: string; html: string; backlinks: string[] }
 
+export type DocSource = { content: string; version: string }
+
+export type DocSave = { path: string; version: string; content: string; message: string }
+
 export type GuidePage = { slug: string; title: string }
 
 export type GuideContent = GuidePage & { html: string }
@@ -163,6 +167,20 @@ export const api = {
   archive: () => request<Card[]>(`${scoped}/archive`),
   docList: () => request<string[]>(`${scoped}/docs/list`),
   doc: (path: string) => request<DocDetail>(`${scoped}/docs?path=${encodeURIComponent(path)}`),
+  docSource: (path: string) =>
+    request<DocSource>(`${scoped}/docs/source?path=${encodeURIComponent(path)}`, undefined, {
+      redirectToLogin: false,
+    }),
+  saveDoc: (save: DocSave) =>
+    request<void>(
+      `${scoped}/docs/save`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(save),
+      },
+      { redirectToLogin: false },
+    ),
   move: (id: string, seen: string, column: string) =>
     request<void>(
       `${scoped}/tasks/${encodeURIComponent(id)}/move`,

@@ -48,6 +48,8 @@ func (a api) routes(mux *http.ServeMux) {
 			"GET /archive":            a.archive,
 			"GET /docs":               a.doc,
 			"GET /docs/list":          a.docList,
+			"GET /docs/source":        a.docSource,
+			"POST /docs/save":         a.docSave,
 			"GET /files":              a.file,
 			"POST /sync":              a.sync,
 		} {
@@ -210,11 +212,15 @@ func (a api) assign(w http.ResponseWriter, r *http.Request, service *board.Servi
 }
 
 func (a api) decode(w http.ResponseWriter, r *http.Request, into any) bool {
+	return a.decodeWithin(w, r, into, 4<<10)
+}
+
+func (a api) decodeWithin(w http.ResponseWriter, r *http.Request, into any, limit int64) bool {
 	if r.Header.Get("Content-Type") != "application/json" {
 		a.json(w, http.StatusUnsupportedMediaType, map[string]string{"error": "send application/json"})
 		return false
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(into); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, limit)).Decode(into); err != nil {
 		a.json(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
 		return false
 	}
@@ -244,6 +250,21 @@ func (a api) doc(w http.ResponseWriter, r *http.Request, service *board.Service)
 
 func (a api) docList(w http.ResponseWriter, _ *http.Request, service *board.Service) {
 	a.json(w, http.StatusOK, service.Docs())
+}
+
+func (a api) docSource(w http.ResponseWriter, r *http.Request, service *board.Service) {
+	source, err := service.DocSource(r.Context(), r.URL.Query().Get("path"))
+	a.result(w, source, err)
+}
+
+const docSaveLimit = 4 << 20
+
+func (a api) docSave(w http.ResponseWriter, r *http.Request, service *board.Service) {
+	var req board.SaveDocRequest
+	if !a.decodeWithin(w, r, &req, docSaveLimit) {
+		return
+	}
+	a.saved(w, service.SaveDoc(r.Context(), req))
 }
 
 func (a api) file(w http.ResponseWriter, r *http.Request, service *board.Service) {
@@ -294,7 +315,7 @@ func (a api) result(w http.ResponseWriter, v any, err error) {
 		a.json(w, http.StatusForbidden, map[string]string{"error": "no access"})
 	case errors.Is(err, board.ErrBranchMissing):
 		a.json(w, http.StatusNotFound, map[string]string{"error": err.Error(), "code": "no-main-branch"})
-	case errors.Is(err, board.ErrNotMovable), errors.Is(err, board.ErrProtectedBranch):
+	case errors.Is(err, board.ErrNotMovable), errors.Is(err, board.ErrNotEditable), errors.Is(err, board.ErrProtectedBranch):
 		a.json(w, http.StatusForbidden, map[string]string{"error": err.Error()})
 	case errors.Is(err, board.ErrUnknownPerson):
 		a.json(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})

@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { toast } from 'sonner'
-import { ApiError, api, type Card } from './api'
+import { ApiError, api, type Card, type DocSave } from './api'
 import { BOARD_PREFIX, loginPath } from './boardPath'
 import { applyPendingAssigns, type PendingAssign } from './assigns'
 import { applyPendingMoves, type PendingMove } from './moves'
@@ -148,6 +148,14 @@ export function useDocList() {
 
 export function useDoc(path: string) {
   return useQuery({ queryKey: keys.doc(path), queryFn: () => api.doc(path), enabled: path !== '' })
+}
+
+export function useSaveDoc() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (save: DocSave) => api.saveDoc(save),
+    onSuccess: () => client.invalidateQueries(),
+  })
 }
 
 export function useSync() {
