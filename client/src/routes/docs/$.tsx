@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Loader2Icon } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { toast } from 'sonner'
 import { RichContent } from '@/components/molecules/RichContent'
@@ -8,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { ApiError, api, type DocSource } from '@/lib/api'
 import { useBoard, useDoc, useDocList } from '@/lib/queries'
 
-const DocEditor = lazy(() => import('@/components/organisms/DocEditor'))
+const loadEditor = () => import('@/components/organisms/DocEditor')
+const DocEditor = lazy(loadEditor)
 
 export const Route = createFileRoute('/docs/$')({
   component: DocPage,
@@ -30,7 +32,8 @@ function DocPage() {
   const startEditing = async () => {
     setLoadingSource(true)
     try {
-      setEditing({ path, source: await api.docSource(path) })
+      const [source] = await Promise.all([api.docSource(path), loadEditor()])
+      setEditing({ path, source })
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : 'The doc could not be opened for editing')
     } finally {
@@ -55,6 +58,7 @@ function DocPage() {
               <p className="font-mono text-xs text-muted-foreground">docs/{path}</p>
               {doc && board?.readOnly === false && (
                 <Button variant="outline" size="sm" onClick={startEditing} disabled={loadingSource}>
+                  {loadingSource && <Loader2Icon className="animate-spin" />}
                   Edit
                 </Button>
               )}
