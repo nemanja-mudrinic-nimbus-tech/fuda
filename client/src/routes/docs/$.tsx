@@ -45,13 +45,7 @@ function DocPage() {
     <div className="flex min-h-0 flex-1">
       <DocTree paths={paths ?? []} openPath={path} />
       <main className={editor ? 'flex flex-1 flex-col overflow-hidden' : 'flex-1 overflow-y-auto'}>
-        <div
-          className={
-            editor
-              ? 'mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col p-6'
-              : 'mx-auto max-w-3xl p-6'
-          }
-        >
+        <div className={editor ? 'flex min-h-0 w-full flex-1 flex-col' : 'mx-auto max-w-3xl p-6'}>
           {path === '' && paths && <p className="text-sm text-muted-foreground">Pick a doc</p>}
           {path !== '' && !editor && (
             <div className="mb-4 flex items-center justify-between gap-2">
